@@ -1,4 +1,5 @@
-# Envoy — Frictionless Crypto Payment Link Generator
+# justpay.wtf
+— Frictionless Crypto Payment Link Generator
 
 A zero-auth payment link generator with integrated swap/bridge for Solana & Ethereum.
 
