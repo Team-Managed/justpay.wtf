@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { Web3Provider } from "@/providers/Web3Provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -20,7 +21,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Web3Provider>
+          {children}
+        </Web3Provider>
+      </body>
     </html>
   );
 }
