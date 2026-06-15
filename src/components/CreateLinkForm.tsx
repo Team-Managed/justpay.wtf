@@ -10,6 +10,7 @@ export function CreateLinkForm() {
   const [chain, setChain] = useState<'ethereum' | 'solana'>('ethereum');
   const [amount, setAmount] = useState('');
   const [tokenSymbol, setTokenSymbol] = useState('USDC');
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -26,6 +27,7 @@ export function CreateLinkForm() {
           creatorChain: chain,
           tokenSymbol,
           amount,
+          creatorEmail: email || undefined,
           label: 'justpay.wtf Payment',
         })
       });
@@ -112,6 +114,17 @@ export function CreateLinkForm() {
             <option value={chain === 'ethereum' ? 'ETH' : 'SOL'}>{chain === 'ethereum' ? 'ETH' : 'SOL'}</option>
           </select>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label className="form-label">Email (Optional)</label>
+        <input 
+          type="email" 
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="For payment notifications" 
+          className="input-field"
+        />
       </div>
 
       <button 
