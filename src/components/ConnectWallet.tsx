@@ -61,7 +61,7 @@ export function ConnectWallet({ chain }: ConnectWalletProps) {
     return (
       <button 
         onClick={handleDisconnect}
-        className="btn-connect-active"
+        className="btn-connect-active group"
       >
         <Wallet className="w-5 h-5 group-hover:hidden" />
         <span className="group-hover:hidden">{shortAddress}</span>

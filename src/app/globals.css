@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@plugin "tailwindcss-animate";
-
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -33,6 +31,10 @@
   --color-surface-hover: var(--surface-hover);
   --color-border: var(--border);
   --color-border-hover: var(--border-hover);
+  
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
   
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
@@ -113,6 +115,6 @@ body {
     @apply w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium py-3 px-4 rounded-xl transition-all;
   }
   .btn-connect-active {
-    @apply w-full flex items-center justify-center gap-3 bg-success/10 hover:bg-error/10 border border-success/30 hover:border-error/30 text-success hover:text-error font-medium py-3 px-4 rounded-xl transition-all group;
+    @apply w-full flex items-center justify-center gap-3 bg-success/10 hover:bg-error/10 border border-success/30 hover:border-error/30 text-success hover:text-error font-medium py-3 px-4 rounded-xl transition-all;
   }
 }
