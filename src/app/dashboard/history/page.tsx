@@ -1,13 +1,75 @@
+'use client'
+
+import { useState, useEffect } from 'react';
 import { ArrowDownToLine, Search } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useAccount } from 'wagmi';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 export default function DashboardHistory() {
-  const transactions = [
-    { id: 'tx_19x...', linkId: 'link_abcd123', amount: '500 USDC', fromChain: 'Solana', date: '2023-10-27 14:30', status: 'Settled' },
-    { id: 'tx_82y...', linkId: 'link_xyz987', amount: '1200 USDT', fromChain: 'Ethereum', date: '2023-10-26 09:15', status: 'Settled' },
-    { id: 'tx_44z...', linkId: 'link_mnop456', amount: '150 USDC', fromChain: 'Polygon', date: '2023-10-25 18:45', status: 'Settled' },
-    { id: 'tx_99a...', linkId: 'link_qrst789', amount: '3000 USDC', fromChain: 'Arbitrum', date: '2023-10-25 11:20', status: 'Failed' },
-    { id: 'tx_11b...', linkId: 'link_uvwx012', amount: '50 USDC', fromChain: 'Solana', date: '2023-10-24 16:00', status: 'Settled' },
-  ];
+  const { address: evmAddress } = useAccount();
+  const { publicKey } = useWallet();
+  const address = evmAddress || publicKey?.toBase58();
+
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchHistory() {
+      if (!address) {
+        setLoading(false);
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('transactions')
+        .select(`
+          id,
+          tx_hash,
+          amount_paid,
+          token_paid,
+          payer_chain,
+          status,
+          created_at,
+          payment_links!inner(short_code, creator_address)
+        `)
+        .eq('payment_links.creator_address', address)
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        const formatted = data.map((tx: any) => ({
+          id: `${tx.tx_hash.slice(0, 8)}...${tx.tx_hash.slice(-6)}`,
+          rawTxHash: tx.tx_hash,
+          linkId: tx.payment_links.short_code,
+          amount: `${tx.amount_paid} ${tx.token_paid}`,
+          fromChain: tx.payer_chain,
+          date: new Date(tx.created_at).toLocaleString(),
+          status: tx.status === 'confirmed' ? 'Settled' : tx.status === 'pending' ? 'Pending' : 'Failed'
+        }));
+        setTransactions(formatted);
+      }
+      setLoading(false);
+    }
+    
+    fetchHistory();
+  }, [address]);
+
+  const handleExportCSV = () => {
+    if (transactions.length === 0) return;
+    const headers = ['Transaction Hash', 'Link ID', 'Amount', 'Source Chain', 'Date', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...transactions.map(tx => `${tx.rawTxHash},${tx.linkId},${tx.amount},${tx.fromChain},"${tx.date}",${tx.status}`)
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `justpay_history_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -16,7 +78,7 @@ export default function DashboardHistory() {
         <p className="text-sm text-zinc-400">View and export all payments received through your generated links.</p>
       </div>
 
-      <div className="glass-card flex flex-col overflow-hidden">
+      <div className="glass-card flex flex-col overflow-hidden min-h-[400px]">
         {/* Filters & Search */}
         <div className="p-6 border-b border-border flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="relative w-full sm:w-96">
@@ -28,7 +90,7 @@ export default function DashboardHistory() {
             />
           </div>
           
-          <button className="btn-secondary w-full sm:w-auto px-6 py-3 flex items-center gap-2">
+          <button onClick={handleExportCSV} disabled={transactions.length === 0} className="btn-secondary w-full sm:w-auto px-6 py-3 flex items-center gap-2 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <ArrowDownToLine className="w-4 h-4" /> Export CSV
           </button>
         </div>
@@ -47,22 +109,34 @@ export default function DashboardHistory() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {transactions.map((tx) => (
-                <tr key={tx.id} className="hover:bg-white/5 transition-colors">
-                  <td className="p-4 text-sm font-mono text-foreground">{tx.id}</td>
-                  <td className="p-4 text-sm font-mono text-zinc-400">{tx.linkId}</td>
-                  <td className="p-4 text-sm font-bold text-foreground">{tx.amount}</td>
-                  <td className="p-4 text-sm text-zinc-400">{tx.fromChain}</td>
-                  <td className="p-4 text-sm text-zinc-500">{tx.date}</td>
-                  <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      tx.status === 'Settled' ? 'bg-success/10 text-success border border-success/20' : 'bg-error/10 text-error border border-error/20'
-                    }`}>
-                      {tx.status}
-                    </span>
-                  </td>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="p-12 text-center text-zinc-500">Loading history...</td>
                 </tr>
-              ))}
+              ) : transactions.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-12 text-center text-zinc-500">No transactions found for this wallet.</td>
+                </tr>
+              ) : (
+                transactions.map((tx) => (
+                  <tr key={tx.rawTxHash} className="hover:bg-white/5 transition-colors">
+                    <td className="p-4 text-sm font-mono text-foreground" title={tx.rawTxHash}>{tx.id}</td>
+                    <td className="p-4 text-sm font-mono text-zinc-400">{tx.linkId}</td>
+                    <td className="p-4 text-sm font-bold text-foreground">{tx.amount}</td>
+                    <td className="p-4 text-sm text-zinc-400 capitalize">{tx.fromChain}</td>
+                    <td className="p-4 text-sm text-zinc-500">{tx.date}</td>
+                    <td className="p-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        tx.status === 'Settled' ? 'bg-success/10 text-success border border-success/20' : 
+                        tx.status === 'Pending' ? 'bg-warning/10 text-warning border border-warning/20' : 
+                        'bg-error/10 text-error border border-error/20'
+                      }`}>
+                        {tx.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

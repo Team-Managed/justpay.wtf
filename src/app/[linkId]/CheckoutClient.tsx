@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ConnectWallet } from '@/components/ConnectWallet'
+import { WalletConnectButton } from '@/components/shared/WalletConnectButton'
 import { SmartButton } from '@/components/SmartButton'
 
 interface CheckoutClientProps {
@@ -16,6 +16,7 @@ export function CheckoutClient({ linkId, chain, recipientAddress, tokenSymbol, a
   const [payerChain, setPayerChain] = useState<'ethereum' | 'solana'>('ethereum')
   const [isSuccess, setIsSuccess] = useState(false)
   const [txHash, setTxHash] = useState<string | null>(null)
+  const [error, setError] = useState<{ type: 'expired' | 'failed_slippage' | 'failed_reverted' | 'unknown', message: string } | null>(null)
 
   // Very basic token mapping for V1 mockup purposes
   const getDestinationTokenAddress = () => {
@@ -56,6 +57,29 @@ export function CheckoutClient({ linkId, chain, recipientAddress, tokenSymbol, a
     )
   }
 
+  if (error) {
+    return (
+      <div className="glass-card p-8 flex flex-col items-center justify-center text-center gap-4 border-error/20 bg-error/5">
+        <div className="w-16 h-16 rounded-full bg-error/20 flex items-center justify-center mb-2">
+          <div className="w-8 h-8 rounded-full bg-error flex items-center justify-center text-white font-bold text-xl">!</div>
+        </div>
+        <h2 className="text-2xl font-bold text-error">Payment Failed</h2>
+        <p className="text-zinc-400 text-sm max-w-xs">
+          {error.type === 'expired' && "This payment link has expired."}
+          {error.type === 'failed_slippage' && "Transaction failed due to high slippage. Please try again."}
+          {error.type === 'failed_reverted' && "The transaction reverted on-chain. Check your wallet balance and try again."}
+          {error.type === 'unknown' && error.message}
+        </p>
+        <button 
+          onClick={() => setError(null)}
+          className="btn-secondary mt-4 w-full max-w-[200px]"
+        >
+          Try Again
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
@@ -76,7 +100,7 @@ export function CheckoutClient({ linkId, chain, recipientAddress, tokenSymbol, a
         </div>
       </div>
 
-      <ConnectWallet chain={payerChain} />
+      <WalletConnectButton variant="form" />
 
       <SmartButton 
         linkId={linkId}
@@ -90,6 +114,13 @@ export function CheckoutClient({ linkId, chain, recipientAddress, tokenSymbol, a
         onSuccess={(hash) => {
           setTxHash(hash)
           setIsSuccess(true)
+        }}
+        onError={(err: any) => {
+          const msg = err?.message || '';
+          if (msg.includes('expired')) setError({ type: 'expired', message: msg });
+          else if (msg.includes('slippage')) setError({ type: 'failed_slippage', message: msg });
+          else if (msg.includes('revert') || msg.includes('insufficient')) setError({ type: 'failed_reverted', message: msg });
+          else setError({ type: 'unknown', message: msg || 'An unknown error occurred' });
         }}
       />
     </div>

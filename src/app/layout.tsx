@@ -4,6 +4,7 @@ import "./globals.css";
 import { Web3Provider } from "@/providers/Web3Provider";
 import { Navbar } from "@/components/Navbar";
 import { NeonBackground } from "@/components/NeonBackground";
+import { Footer } from "@/components/shared/Footer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -42,6 +43,7 @@ export default function RootLayout({
           <div className="relative z-10 flex flex-col flex-1">
             {children}
           </div>
+          <Footer />
         </Web3Provider>
       </body>
     </html>

@@ -29,11 +29,19 @@ serve(async (req) => {
       throw new Error('Missing required fields')
     }
 
-    // Rate Limiting Check (Max 10 per minute per address)
+    if (parseFloat(amount) < 1) {
+      return new Response(JSON.stringify({ error: 'Minimum link amount is $1.00 to prevent spam' }), { 
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
+    }
+
+    const clientIp = req.headers.get('x-forwarded-for') || 'unknown'
+
+    // Rate Limiting Check (Max 10 per minute per address OR IP)
     const { count } = await supabaseClient
       .from('payment_links')
       .select('*', { count: 'exact', head: true })
-      .eq('creator_address', creatorAddress)
+      .or(`creator_address.eq.${creatorAddress},creator_ip.eq.${clientIp}`)
       .gte('created_at', new Date(Date.now() - 60_000).toISOString())
 
     if (count && count >= 10) {
@@ -62,12 +70,13 @@ serve(async (req) => {
         creator_address: creatorAddress,
         creator_chain: creatorChain,
         creator_email: creatorEmail,
+        creator_ip: clientIp,
         token_symbol: tokenSymbol,
         token_address: tokenAddress,
         amount: amount,
         label: label,
         memo: memo,
-        expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString() // 15 mins default expiry
+        expires_at: payload.expiresAt || new Date(Date.now() + 15 * 60 * 1000).toISOString() // default 15 mins
       })
       .select()
       .single()

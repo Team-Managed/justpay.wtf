@@ -20,6 +20,7 @@ interface SmartButtonProps {
   amount: string
   decimals?: number
   onSuccess: (txHash: string, isBridge?: boolean) => void
+  onError?: (error: any) => void
 }
 
 export function SmartButton({ 
@@ -31,7 +32,8 @@ export function SmartButton({
   inputTokenAddress,
   amount, 
   decimals = 18,
-  onSuccess 
+  onSuccess,
+  onError
 }: SmartButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [swapPhase, setSwapPhase] = useState<'IDLE' | 'SWAP_COMPLETE'>('IDLE')
@@ -171,7 +173,11 @@ export function SmartButton({
       
     } catch (error) {
       console.error(error)
-      alert(error instanceof Error ? error.message : 'Transaction failed')
+      if (onError) {
+        onError(error)
+      } else {
+        alert(error instanceof Error ? error.message : 'Transaction failed')
+      }
     } finally {
       setIsLoading(false)
     }

@@ -11,7 +11,7 @@ import '@solana/wallet-adapter-react-ui/styles.css'
 const queryClient = new QueryClient()
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
-  const endpoint = useMemo(() => process.env.NEXT_PUBLIC_HELIUS_RPC ?? 'https://api.mainnet-beta.solana.com', [])
+  const endpoint = useMemo(() => typeof window !== 'undefined' ? window.location.origin + '/api/rpc/solana' : 'https://api.mainnet-beta.solana.com', [])
   const wallets = useMemo(() => [], [])
   const onError = useCallback((error: Error) => {
     console.error(error);
