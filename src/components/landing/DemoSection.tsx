@@ -2,7 +2,7 @@ import { ArrowUpRight, Activity } from 'lucide-react';
 
 export function DemoSection() {
   return (
-    <div className="w-full max-w-5xl mx-auto px-6 py-24 relative z-10">
+    <div className="w-full max-w-5xl mx-auto px-6 py-24 relative z-20 overflow-hidden">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col items-center justify-center text-center gap-2 mb-8">
           <h2 className="text-sm font-bold text-primary uppercase tracking-widest">Live Preview</h2>
@@ -34,7 +34,7 @@ export function DemoSection() {
               <h2 className="text-3xl font-bold text-foreground">8</h2>
             </div>
 
-            <div className="bg-surface border border-primary/20 rounded-2xl p-6 bg-gradient-to-br from-primary/15 to-primary/5 shadow-[0_0_30px_rgba(236,72,153,0.1)] sm:col-span-2 lg:col-span-1">
+            <div className="bg-surface border border-primary/20 rounded-2xl p-6 bg-gradient-to-br from-primary/15 to-primary/5 shadow-[0_0_30px_rgba(16,185,129,0.1)] sm:col-span-2 lg:col-span-1">
               <p className="text-primary font-medium text-sm mb-2 flex items-center gap-1.5">
                 <Activity className="w-4 h-4" /> System Status
               </p>

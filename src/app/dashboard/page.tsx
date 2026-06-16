@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ArrowUpRight, Activity, X } from 'lucide-react';
+import { AnimatedCounter } from '@/components/AnimatedCounter';
 import { CreateLinkForm } from "@/components/CreateLinkForm";
 import { supabase } from "@/lib/supabase";
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -124,7 +125,9 @@ export default function DashboardOverview() {
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent animate-pulse" />
                 </div>
               ) : (
-                <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-primary/80">${totalVolume.toLocaleString(undefined, {minimumFractionDigits: 2})}</h2>
+                <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-primary/80">
+                  <AnimatedCounter value={totalVolume} prefix="$" decimals={2} />
+                </h2>
               )}
             </div>
           </div>
@@ -136,14 +139,19 @@ export default function DashboardOverview() {
                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent animate-pulse" />
                </div>
             ) : (
-               <h2 className="text-3xl font-bold text-foreground">{activeLinks}</h2>
+               <h2 className="text-3xl font-bold text-foreground">
+                 <AnimatedCounter value={activeLinks} />
+               </h2>
             )}
           </div>
 
-          <div className="glass-card p-6 bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 shadow-[0_0_30px_rgba(236,72,153,0.1)]">
-            <p className="text-primary font-medium text-sm mb-2 flex items-center gap-2">
-              <Activity className="w-4 h-4" /> System Status
-            </p>
+          <div className="glass-card p-6 bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 shadow-[0_0_30px_rgba(16,185,129,0.1)] block">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-primary font-medium text-sm flex items-center gap-2">
+                <Activity className="w-4 h-4" /> System Status
+              </p>
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            </div>
             <h2 className="text-xl font-bold text-white mt-1">All Systems Operational</h2>
             <p className="text-primary/60 text-xs mt-2">Routing engine is online.</p>
           </div>
