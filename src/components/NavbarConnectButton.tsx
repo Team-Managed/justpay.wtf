@@ -37,7 +37,7 @@ export function NavbarConnectButton() {
 
   if (!mounted) {
     return (
-      <button className="px-5 py-2 rounded-xl bg-white/5 text-white/50 text-sm font-semibold transition-all border border-white/5 cursor-not-allowed flex items-center gap-2">
+      <button className="px-5 py-2 rounded-xl bg-white/5 text-white/50 text-sm font-semibold transition-all border border-border cursor-not-allowed flex items-center gap-2">
         <Wallet className="w-4 h-4" />
         Loading...
       </button>
@@ -66,7 +66,7 @@ export function NavbarConnectButton() {
     <>
       <button 
         onClick={() => setIsOpen(true)}
-        className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition-all border border-white/5 flex items-center gap-2"
+        className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-foreground text-sm font-semibold transition-all border border-border flex items-center gap-2"
       >
         <Wallet className="w-4 h-4" />
         Connect Wallet
@@ -77,27 +77,27 @@ export function NavbarConnectButton() {
           <div className="glass-card w-full max-w-sm relative animate-in fade-in zoom-in duration-200">
             <button 
               onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white bg-white/5 rounded-full z-10"
+              className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-foreground bg-white/5 rounded-full z-10"
             >
               <X className="w-5 h-5" />
             </button>
             <div className="p-8 flex flex-col gap-6">
-              <h2 className="text-xl font-bold text-white text-center mb-2">Connect Wallet</h2>
+              <h2 className="text-xl font-bold text-foreground text-center mb-2">Connect Wallet</h2>
               
               <button 
                 onClick={() => {
                   setIsOpen(false);
                   evmConnect({ connector: injected() });
                 }}
-                className="flex items-center justify-between p-4 rounded-xl bg-[#0A0A0A] border border-white/10 hover:border-white/30 hover:bg-white/5 transition-all group"
+                className="flex items-center justify-between p-4 rounded-xl bg-surface border border-white/[0.15] hover:border-white/30 hover:bg-white/5 transition-all group"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
                     <div className="w-5 h-5 rounded-full bg-blue-500" />
                   </div>
-                  <span className="font-bold text-white">Ethereum (EVM)</span>
+                  <span className="font-bold text-foreground">Ethereum (EVM)</span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+                <ChevronRight className="w-5 h-5 text-zinc-500 group-hover:text-foreground transition-colors" />
               </button>
 
               <button 
@@ -105,15 +105,15 @@ export function NavbarConnectButton() {
                   setIsOpen(false);
                   setSolanaModalVisible(true);
                 }}
-                className="flex items-center justify-between p-4 rounded-xl bg-[#0A0A0A] border border-white/10 hover:border-white/30 hover:bg-white/5 transition-all group"
+                className="flex items-center justify-between p-4 rounded-xl bg-surface border border-white/[0.15] hover:border-white/30 hover:bg-white/5 transition-all group"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
                     <div className="w-5 h-5 rounded-full bg-purple-500" />
                   </div>
-                  <span className="font-bold text-white">Solana</span>
+                  <span className="font-bold text-foreground">Solana</span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+                <ChevronRight className="w-5 h-5 text-zinc-500 group-hover:text-foreground transition-colors" />
               </button>
             </div>
           </div>

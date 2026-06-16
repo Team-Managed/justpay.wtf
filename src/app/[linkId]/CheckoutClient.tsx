@@ -42,14 +42,14 @@ export function CheckoutClient({ linkId, chain, recipientAddress, tokenSymbol, a
         <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mb-2">
           <div className="w-8 h-8 rounded-full bg-success" />
         </div>
-        <h2 className="text-2xl font-bold text-white">Payment Sent!</h2>
-        <p className="text-gray-400 text-sm max-w-xs">
+        <h2 className="text-2xl font-bold text-foreground">Payment Sent!</h2>
+        <p className="text-zinc-400 text-sm max-w-xs">
           Your transaction is confirming. The merchant will be notified automatically.
         </p>
         {txHash && (
           <div className="mt-4 status-box w-full">
-            <p className="form-label text-gray-500 mb-1">Transaction Hash</p>
-            <p className="text-sm font-mono text-white truncate">{txHash}</p>
+            <p className="form-label text-zinc-500 mb-1">Transaction Hash</p>
+            <p className="text-sm font-mono text-foreground truncate">{txHash}</p>
           </div>
         )}
       </div>
@@ -59,7 +59,7 @@ export function CheckoutClient({ linkId, chain, recipientAddress, tokenSymbol, a
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <label className="text-sm font-medium text-gray-400">Pay with Wallet</label>
+        <label className="text-sm font-medium text-zinc-400">Pay with Wallet</label>
         <div className="flex gap-2">
           <button 
             onClick={() => setPayerChain('ethereum')}

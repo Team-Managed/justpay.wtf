@@ -30,7 +30,7 @@ export function ConnectWallet({ chain }: ConnectWalletProps) {
 
   if (!mounted) {
     return (
-      <button className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 text-white font-medium py-3 px-4 rounded-xl opacity-50 cursor-not-allowed">
+      <button className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/[0.15] text-foreground font-medium py-3 px-4 rounded-xl opacity-50 cursor-not-allowed">
         <Wallet className="w-5 h-5" />
         Loading...
       </button>
@@ -75,7 +75,7 @@ export function ConnectWallet({ chain }: ConnectWalletProps) {
       onClick={handleConnect}
       className="btn-connect"
     >
-      <Wallet className="w-5 h-5 text-gray-400" />
+      <Wallet className="w-5 h-5 text-zinc-400" />
       Connect {chain === 'ethereum' ? 'EVM' : 'Solana'} Wallet
     </button>
   )
