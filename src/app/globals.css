@@ -3,23 +3,22 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #09090B; /* Deep Zinc / Near Black */
-  --foreground: #FAFAFA; /* Zinc 50 */
+  --background: #0F0A0E; /* Deep Cosmic Rose/Black */
+  --foreground: #FFFFFF; /* Pure White */
   
-  --primary: #2563EB; /* Clean SaaS Blue */
-  --primary-hover: #1D4ED8; /* Darker Blue */
+  --primary: #EC4899; /* Pink 500 */
+  --primary-hover: #DB2777; /* Pink 600 */
   
-  --secondary: #8B5CF6; /* Vibrant Purple */
+  --secondary: #10B981; /* Emerald 500 */
   
-  --surface: #18181B; /* Zinc 900 for cards */
-  --surface-hover: #121212;
-  --border: rgba(255, 255, 255, 0.05);
-  --border-hover: rgba(255, 255, 255, 0.1);
+  --surface: #161115; /* Deep Rose Surface */
+  --surface-hover: #20171D;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.15);
   
   --success: #10B981; /* Mint Green */
   --error: #EF4444; /* Bright Red */
-  --warning: #F59E0B;
-  --warning: #f59e0b;
+  --warning: #F59E0B; /* Amber */
 }
 
 @theme inline {
@@ -38,6 +37,8 @@
   --color-warning: var(--warning);
   
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
 body {
@@ -52,31 +53,31 @@ body {
 /* Glassmorphism Utilities */
 @layer utilities {
   .glass {
-    @apply bg-surface/80 backdrop-blur-2xl border border-white/5 shadow-[0_8px_30px_rgba(0,0,0,0.4)];
+    @apply bg-surface/80 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.4)];
   }
   
   .glass-card {
-    @apply bg-surface/90 backdrop-blur-3xl border border-white/5 rounded-[2rem] shadow-2xl transition-all duration-300;
+    @apply bg-surface/90 backdrop-blur-3xl border border-white/[0.08] rounded-[2rem] shadow-2xl transition-all duration-300;
   }
   
   .glass-card:hover {
-    @apply bg-surface border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.5)];
+    @apply bg-surface border-white/[0.15] shadow-[0_12px_40px_rgba(0,0,0,0.5)];
   }
 }
 
 @layer components {
   /* Buttons */
   .btn-primary {
-    @apply w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-primary-hover hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-[1.5rem] transition-all shadow-[0_4px_20px_rgba(59,130,246,0.3)];
+    @apply w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-primary-hover hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-[1.5rem] transition-all shadow-[0_4px_20px_rgba(236,72,153,0.3)];
   }
   .btn-primary-lg {
-    @apply w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-primary-hover hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-[1.5rem] transition-all shadow-[0_4px_20px_rgba(59,130,246,0.3)];
+    @apply w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-primary-hover hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-[1.5rem] transition-all shadow-[0_4px_20px_rgba(236,72,153,0.3)];
   }
   .btn-secondary {
-    @apply flex-1 py-2 rounded-2xl text-sm font-semibold transition-all bg-[#0A0A0A] text-gray-400 border border-white/5 hover:bg-[#121212];
+    @apply flex-1 py-2 rounded-2xl text-sm font-semibold transition-all bg-surface text-zinc-400 border border-white/[0.08] hover:bg-surface-hover;
   }
   .btn-secondary-lg {
-    @apply flex-1 py-3 rounded-2xl text-sm font-semibold transition-all bg-[#0A0A0A] text-gray-400 border border-white/5 hover:bg-[#121212];
+    @apply flex-1 py-3 rounded-2xl text-sm font-semibold transition-all bg-surface text-zinc-400 border border-white/[0.08] hover:bg-surface-hover;
   }
   .btn-secondary-active {
     @apply flex-1 py-2 rounded-2xl text-sm font-bold transition-all bg-primary/20 text-primary border border-primary/30;
@@ -85,18 +86,18 @@ body {
     @apply flex-1 py-3 rounded-2xl text-sm font-bold transition-all bg-primary/20 text-primary border border-primary/30;
   }
   .btn-icon {
-    @apply text-gray-500 hover:text-white transition-colors bg-[#0A0A0A] p-2 rounded-full border border-white/5;
+    @apply text-zinc-500 hover:text-white transition-colors bg-surface p-2 rounded-full border border-white/[0.08];
   }
 
   /* Inputs & Forms */
   .input-field {
-    @apply w-full bg-[#0A0A0A] border border-white/5 rounded-2xl px-5 py-4 text-sm text-white font-medium placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all;
+    @apply w-full bg-surface border border-white/[0.08] rounded-2xl px-5 py-4 text-sm text-white font-medium placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all;
   }
   .select-field {
-    @apply w-full bg-[#0A0A0A] border border-white/5 rounded-2xl px-5 py-4 text-sm text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none;
+    @apply w-full bg-surface border border-white/[0.08] rounded-2xl px-5 py-4 text-sm text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none;
   }
   .form-label {
-    @apply text-xs font-bold text-gray-500 uppercase tracking-wider mb-1;
+    @apply text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1;
   }
 
   /* Typography & Layout */
@@ -107,13 +108,13 @@ body {
     @apply inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary w-fit text-sm font-medium;
   }
   .status-box {
-    @apply p-4 rounded-[1.5rem] bg-[#0A0A0A] border border-white/5 shadow-inner;
+    @apply p-4 rounded-[1.5rem] bg-surface border border-white/[0.08] shadow-inner;
   }
   .divider-line {
-    @apply flex-grow border-t border-white/10;
+    @apply flex-grow border-t border-white/[0.15];
   }
   .btn-connect {
-    @apply w-full flex items-center justify-center gap-3 bg-[#0A0A0A] hover:bg-[#121212] border border-white/5 text-white font-bold py-4 px-4 rounded-[1.5rem] transition-all;
+    @apply w-full flex items-center justify-center gap-3 bg-surface hover:bg-surface-hover border border-white/[0.08] text-white font-bold py-4 px-4 rounded-[1.5rem] transition-all;
   }
   .btn-connect-active {
     @apply w-full flex items-center justify-center gap-3 bg-success/10 hover:bg-error/10 border border-success/30 hover:border-error/30 text-success hover:text-error font-bold py-4 px-4 rounded-[1.5rem] transition-all;
