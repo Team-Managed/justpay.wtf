@@ -38,7 +38,7 @@ export function usePaymentState(shortCode: string, payerAddress?: string) {
         
         // 2. Check local sessionStorage for in-progress swap
         if (payerAddress) {
-          const sessionKey = `envoy_swap:${shortCode}:${payerAddress}`
+          const sessionKey = `justpay_swap:${shortCode}:${payerAddress}`
           const swapState = sessionStorage.getItem(sessionKey)
           if (swapState === 'SWAP_COMPLETE') {
             setState(s => ({ ...s, status: 'swap_in_progress' }))
@@ -66,13 +66,13 @@ export function usePaymentState(shortCode: string, payerAddress?: string) {
     setPending: (txHash: string, bridgeTxHash?: string) => setState({ status: 'pending', txHash, bridgeTxHash }),
     setSwapComplete: () => {
       if (payerAddress) {
-        sessionStorage.setItem(`envoy_swap:${shortCode}:${payerAddress}`, 'SWAP_COMPLETE')
+        sessionStorage.setItem(`justpay_swap:${shortCode}:${payerAddress}`, 'SWAP_COMPLETE')
         setState({ status: 'swap_in_progress' })
       }
     },
     clearSwapState: () => {
       if (payerAddress) {
-        sessionStorage.removeItem(`envoy_swap:${shortCode}:${payerAddress}`)
+        sessionStorage.removeItem(`justpay_swap:${shortCode}:${payerAddress}`)
       }
     }
   }
