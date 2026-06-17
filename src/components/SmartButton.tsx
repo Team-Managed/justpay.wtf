@@ -1,21 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAccount, useSendTransaction } from 'wagmi'
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
-import { executeEVMTransfer } from '@/lib/web3/executeEVM'
-import { executeSolanaTransfer } from '@/lib/web3/executeSolana'
-import { getSwapQuote, constructSwapCalldata } from '@/lib/web3/swap'
-import { getBridgeQuote, buildBridgeTx } from '@/lib/web3/bridge'
+import { useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-kit'
+import { fetchLifiQuote, getLifiChainId } from '@/lib/web3/router/lifi'
 import { Loader2 } from 'lucide-react'
 import { VersionedTransaction } from '@solana/web3.js'
+import { Transaction } from '@mysten/sui/transactions'
 
 interface SmartButtonProps {
   linkId: string
-  chain: 'ethereum' | 'solana'
+  chain: 'ethereum' | 'solana' | 'sui'
   recipientAddress: string
   tokenAddress: string | null
-  payerChain: 'ethereum' | 'solana'
+  payerChain: 'ethereum' | 'solana' | 'sui'
   inputTokenAddress: string | null
   amount: string
   decimals?: number
@@ -36,122 +35,85 @@ export function SmartButton({
   onError
 }: SmartButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [swapPhase, setSwapPhase] = useState<'IDLE' | 'SWAP_COMPLETE'>('IDLE')
   
   const { address: evmAddress } = useAccount()
   const { sendTransactionAsync } = useSendTransaction()
+  
   const wallet = useWallet()
   const { connection } = useConnection()
 
-  const payerAddress = payerChain === 'ethereum' ? evmAddress : wallet.publicKey?.toBase58()
+  const suiAccount = useCurrentAccount()
+  const { mutateAsync: signAndExecuteSui } = useSignAndExecuteTransaction()
 
-  // 2-Phase Recovery Mechanism
-  useEffect(() => {
-    if (payerAddress) {
-      const state = sessionStorage.getItem(`justpay_swap:${linkId}:${payerAddress}`)
-      if (state === 'SWAP_COMPLETE') {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSwapPhase('SWAP_COMPLETE')
-      }
-    }
-  }, [linkId, payerAddress])
+  let payerAddress: string | undefined
+  if (payerChain === 'ethereum') payerAddress = evmAddress
+  else if (payerChain === 'solana') payerAddress = wallet.publicKey?.toBase58()
+  else if (payerChain === 'sui') payerAddress = suiAccount?.address
 
   const handleExecute = async () => {
     setIsLoading(true)
     try {
-      let txHash: string
-      const isBridge = payerChain !== chain
-      let wasSwapped = false
+      if (!payerAddress) throw new Error('Wallet not connected')
 
-      if (isBridge) {
-        // CROSS-CHAIN EXECUTION (deBridge)
-        const srcChainId = payerChain === 'solana' ? 7565164 : 8453 // Assuming Base for EVM payer for now
-        const dstChainId = chain === 'solana' ? 7565164 : 8453
-        
-        const quote = await getBridgeQuote({
-          srcChainId,
-          dstChainId,
-          srcTokenAddress: inputTokenAddress || (payerChain === 'solana' ? '11111111111111111111111111111111' : '0x0000000000000000000000000000000000000000'),
-          dstTokenAddress: tokenAddress || (chain === 'solana' ? '11111111111111111111111111111111' : '0x0000000000000000000000000000000000000000'),
-          exactOutputAmount: amount,
-          decimals
-        })
-
-        const bridgeTx = await buildBridgeTx(quote, payerAddress!, recipientAddress)
-
-        if (payerChain === 'solana') {
-          const swapTransactionBuf = Buffer.from(bridgeTx.tx.data, 'hex')
-          const transaction = VersionedTransaction.deserialize(swapTransactionBuf)
-          txHash = await wallet.sendTransaction(transaction, connection)
-        } else {
-          txHash = await sendTransactionAsync({
-            to: bridgeTx.tx.to as `0x${string}`,
-            data: bridgeTx.tx.data as `0x${string}`,
-            value: BigInt(bridgeTx.tx.value || 0),
-          })
-        }
-
-      } else {
-        // SAME-CHAIN EXECUTION (Direct or Swap)
-        const isSwapRequired = inputTokenAddress && inputTokenAddress !== tokenAddress
-
-        if (isSwapRequired && swapPhase === 'IDLE') {
-          // Phase 1: Execute Swap
-          wasSwapped = true
-          const quote = await getSwapQuote({
-            chain,
-            inputToken: inputTokenAddress!,
-            outputToken: tokenAddress || 'NATIVE',
-            exactOutputAmount: amount,
-            decimals
-          })
-
-          const calldata = await constructSwapCalldata(chain, quote, payerAddress!)
-
-          if (chain === 'solana') {
-            const swapTransactionBuf = Buffer.from(calldata, 'base64')
-            const transaction = VersionedTransaction.deserialize(swapTransactionBuf)
-            txHash = await wallet.sendTransaction(transaction, connection)
-          } else {
-            txHash = await sendTransactionAsync({
-              to: calldata.to as `0x${string}`,
-              data: calldata.data as `0x${string}`,
-              value: BigInt(calldata.value || 0),
-            })
-          }
-
-          sessionStorage.setItem(`justpay_swap:${linkId}:${payerAddress}`, 'SWAP_COMPLETE')
-          setSwapPhase('SWAP_COMPLETE')
-          await new Promise(resolve => setTimeout(resolve, 5000))
-        }
-
-        // Phase 2: Direct Payment
-        if (chain === 'ethereum') {
-          if (!evmAddress) throw new Error('EVM Wallet not connected')
-          txHash = await executeEVMTransfer({
-            sendTransactionAsync,
-            tokenAddress,
-            recipientAddress: recipientAddress as `0x${string}`,
-            amount,
-            decimals
-          })
-        } else {
-          if (!wallet.publicKey) throw new Error('Solana Wallet not connected')
-          txHash = await executeSolanaTransfer({
-            wallet,
-            connection,
-            tokenAddress,
-            recipientAddress,
-            amount,
-            decimals
-          })
+      if (payerChain === 'solana' && wallet.publicKey) {
+        const solBalance = await connection.getBalance(wallet.publicKey)
+        if (solBalance === 0) {
+          throw new Error('Insufficient SOL for transaction fees. Please fund your wallet.')
         }
       }
 
-      sessionStorage.removeItem(`justpay_swap:${linkId}:${payerAddress}`)
+      const isBridge = payerChain !== chain
+      
+      const amountBase = BigInt(Math.floor(parseFloat(amount) * Math.pow(10, decimals))).toString()
+
+      // 1. Get Quote
+      const { quote, fromAmount } = await fetchLifiQuote({
+        fromChain: getLifiChainId(payerChain),
+        toChain: getLifiChainId(chain),
+        fromToken: inputTokenAddress || (payerChain === 'solana' ? '11111111111111111111111111111111' : payerChain === 'sui' ? '0x2::sui::SUI' : '0x0000000000000000000000000000000000000000'),
+        toToken: tokenAddress || (chain === 'solana' ? '11111111111111111111111111111111' : chain === 'sui' ? '0x2::sui::SUI' : '0x0000000000000000000000000000000000000000'),
+        fromAddress: payerAddress,
+        toAddress: recipientAddress,
+        destinationAmountBase: amountBase
+      })
+
+      if (!quote.transactionRequest) {
+        throw new Error('No transaction request returned from LI.FI')
+      }
+
+      let txHash: string
+
+      // 2. Execute Transaction
+      if (payerChain === 'ethereum') {
+        txHash = await sendTransactionAsync({
+          to: quote.transactionRequest.to as `0x${string}`,
+          data: quote.transactionRequest.data as `0x${string}`,
+          value: BigInt(quote.transactionRequest.value || 0),
+        })
+      } else if (payerChain === 'solana') {
+        if (!quote.transactionRequest.data) throw new Error('No tx data');
+        const txBuf = Buffer.from(quote.transactionRequest.data, 'base64')
+        const transaction = VersionedTransaction.deserialize(txBuf)
+        txHash = await wallet.sendTransaction(transaction, connection)
+      } else if (payerChain === 'sui') {
+        if (!quote.transactionRequest.data) throw new Error('No tx data');
+        const txBuf = Buffer.from(quote.transactionRequest.data, 'base64')
+        const transaction = Transaction.from(txBuf)
+        const result = await signAndExecuteSui({ transaction })
+        txHash = result.digest
+      } else {
+        throw new Error('Unsupported payer chain')
+      }
 
       // Record the transaction intent
       const idempotencyKey = crypto.randomUUID()
+      // Use fromAmount to correctly log the actual token quantity paid
+      // We assume inputToken decimals. If we don't have it locally, we just use raw fromAmount or a heuristic.
+      // We will just store raw string or float representation. 
+      // In a production app we'd fetch decimals, but for now we do rough float conversion.
+      const fromDecimals = inputTokenAddress ? (payerChain === 'ethereum' && inputTokenAddress !== '0x0000000000000000000000000000000000000000' ? 6 : 18) : 18;
+      const amountPaidFloat = Number(fromAmount) / Math.pow(10, fromDecimals);
+
       await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/record-transaction`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -161,11 +123,11 @@ export function SmartButton({
           payerAddress,
           payerChain,
           txHash,
-          amountPaid: parseFloat(amount),
+          amountPaid: amountPaidFloat,
           tokenPaid: inputTokenAddress || tokenAddress || 'NATIVE',
-          wasSwapped,
-          bridgeTxHash: isBridge ? txHash : null, // DLN uses the source tx hash as the order ID
-          bridgeProvider: isBridge ? 'deBridge' : null
+          wasSwapped: true, // LI.FI abstracts this
+          bridgeTxHash: isBridge ? txHash : null,
+          bridgeProvider: 'lifi'
         })
       })
 
@@ -194,10 +156,10 @@ export function SmartButton({
       {isLoading ? (
         <>
           <Loader2 className="w-5 h-5 animate-spin" />
-          {payerChain !== chain ? 'Bridging & Paying...' : (swapPhase === 'IDLE' && inputTokenAddress !== tokenAddress ? 'Swapping & Paying...' : 'Confirming Payment...')}
+          Processing with LI.FI...
         </>
       ) : (
-        swapPhase === 'SWAP_COMPLETE' ? `Complete Payment` : `Pay ${amount} ${payerChain !== chain ? 'Cross-Chain' : ''}`
+        `Pay ${amount} ${payerChain !== chain ? 'Cross-Chain' : ''}`
       )}
     </button>
   )

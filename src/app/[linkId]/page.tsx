@@ -26,7 +26,7 @@ export default async function PaymentPage({ params }: { params: Promise<{ linkId
 
       <div className="w-full max-w-md z-10 flex flex-col gap-6">
         <PaymentCard 
-          amount={link.amount}
+          amount={link.destination_amount}
           tokenSymbol={link.token_symbol}
           recipientAddress={link.creator_address}
           memo={link.label}
@@ -46,10 +46,10 @@ export default async function PaymentPage({ params }: { params: Promise<{ linkId
           ) : (
             <CheckoutClient 
               linkId={link.id}
-              chain={link.creator_chain}
+              chain={link.destination_chain}
               recipientAddress={link.creator_address}
               tokenSymbol={link.token_symbol}
-              amount={link.amount.toString()}
+              amount={link.destination_amount.toString()}
             />
           )}
         </div>

@@ -76,6 +76,7 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
       </button>
 
       <ConnectModal
+        trigger={<span className="hidden" />}
         open={isSuiModalOpen}
         onOpenChange={setIsSuiModalOpen}
       />

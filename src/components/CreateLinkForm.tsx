@@ -7,7 +7,7 @@ import { useAccount } from 'wagmi';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletConnectButton } from './shared/WalletConnectButton';
 import { createPaymentLink } from '../lib/payment';
-import { ZeroFeeBanner } from './shared/ZeroFeeBanner';
+import { FeeDisclosureBanner } from './shared/FeeDisclosureBanner';
 import { ChainTokenSelector, SupportedChain } from './shared/ChainTokenSelector';
 
 export function CreateLinkForm() {
@@ -85,7 +85,7 @@ export function CreateLinkForm() {
         <div className="divider-line"></div>
       </div>
 
-      <ZeroFeeBanner chain={chain} />
+      <FeeDisclosureBanner chain={chain} />
 
       <ChainTokenSelector 
         selectedChain={chain}
