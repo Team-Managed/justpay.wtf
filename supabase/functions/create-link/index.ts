@@ -18,7 +18,7 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabaseKey = Deno.env.get('SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     
     const supabaseClient = createClient(supabaseUrl, supabaseKey)
 
@@ -29,8 +29,8 @@ serve(async (req) => {
       throw new Error('Missing required fields')
     }
 
-    if (parseFloat(amount) < 1) {
-      return new Response(JSON.stringify({ error: 'Minimum link amount is $1.00 to prevent spam' }), { 
+    if (parseFloat(amount) < 0.001) {
+      return new Response(JSON.stringify({ error: 'Minimum link amount is 0.001 to prevent spam' }), { 
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       })
     }
