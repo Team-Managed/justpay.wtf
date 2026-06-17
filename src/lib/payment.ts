@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export type PaymentLinkRequest = {
   creatorAddress: string;
-  creatorChain: 'ethereum' | 'solana';
+  creatorChain: 'ethereum' | 'solana' | 'sui';
   tokenSymbol: string;
   amount: string;
   creatorEmail?: string;
