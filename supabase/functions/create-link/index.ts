@@ -35,7 +35,7 @@ serve(async (req) => {
       })
     }
 
-    if (creatorChain === 'sui') {
+    if (creatorChain === 'sui' || creatorChain === 'suiTestnet') {
       const suiAddressRegex = /^0x[a-fA-F0-9]{64}$/
       if (!suiAddressRegex.test(creatorAddress)) {
         return new Response(
