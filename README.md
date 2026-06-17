@@ -9,6 +9,7 @@ A frictionless payment link generator for Solana and Ethereum. Create shareable 
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev)
 [![Solana](https://img.shields.io/badge/Solana-Supported-14F195?logo=solana)](https://solana.com)
 [![Ethereum](https://img.shields.io/badge/Ethereum-Supported-627EEA?logo=ethereum)](https://ethereum.org)
+[![Sui](https://img.shields.io/badge/Sui-Testnet-6FBCF0?logo=sui)](https://sui.io)
 [![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?logo=supabase)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-MIT-green)](#license)
 
@@ -46,7 +47,7 @@ justpay.wtf is a next-generation payment infrastructure for crypto-native applic
 - **Zero Custody**: Payments flow directly from payer to payee wallet. No intermediary holds funds.
 - **Zero Smart Contracts**: No escrow contracts, no automated market maker proxies. Pure blockchain transfers.
 - **Guaranteed Amounts**: ExactOut routing ensures merchants receive exact payment amounts despite slippage.
-- **Multi-Chain**: Seamless token swaps and cross-chain bridges built-in.
+- **Multi-Chain**: Ethereum, Solana, and Sui supported. Seamless token swaps and cross-chain bridges built-in.
 - **Developer Friendly**: Simple API, shareable links, embedded checkout components.
 
 ---
@@ -71,6 +72,7 @@ justpay.wtf is a next-generation payment infrastructure for crypto-native applic
 
 - **Solana** native transfers + SPL tokens
 - **Ethereum** mainnet + L2s (Arbitrum, Optimism, Polygon, Base)
+- **Sui** testnet — native SUI transfers, RPC-verified payments
 - **LI.FI integration** for 12+ bridging protocols
 - **Atomic payment verification** across chains
 
@@ -114,12 +116,14 @@ justpay.wtf implements a **state-free execution model** where:
 │  • record-transaction — Store tx details                        │
 │  • alchemy-webhook   — EVM payment verification                │
 │  • helius-webhook    — Solana payment verification             │
+│  • sui-webhook       — Sui RPC verification (polling)          │
 │  • verify-destination — Atomic cross-chain checks              │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │                    External Services                             │
 │  Alchemy / Helius (RPC & Webhooks)                              │
+│  Sui RPC (fullnode.testnet.sui.io — polling verification)       │
 │  Jupiter V2 (Solana Swap Quotes)                                │
 │  0x Swap API v2 (EVM Swap Quotes)                               │
 │  LI.FI SDK (Cross-Chain Bridge)                                 │
@@ -140,6 +144,8 @@ justpay.wtf implements a **state-free execution model** where:
 | **Styling**         | CSS Variables + Vanilla CSS     | Glassmorphism dark theme               |
 | **EVM Wallet**      | Wagmi v3 + Viem                 | Ethereum wallet interactions           |
 | **Solana Wallet**   | @solana/wallet-adapter-react    | Solana wallet adapter                  |
+| **Sui Wallet**      | @mysten/dapp-kit                | Sui wallet connection + modal          |
+| **Sui SDK**         | @mysten/sui                     | Sui transactions + RPC client          |
 | **Animations**      | Framer Motion + GSAP + Three.js | Complex motion & 3D rendering          |
 | **Database**        | Supabase (Postgres)             | Realtime subscriptions, edge functions |
 | **Authentication**  | Wallet signature verification   | Non-custodial auth via signed messages |
@@ -209,6 +215,7 @@ npx supabase functions deploy record-transaction
 npx supabase functions deploy alchemy-webhook
 npx supabase functions deploy helius-webhook
 npx supabase functions deploy verify-destination
+npx supabase functions deploy sui-webhook
 ```
 
 ### 5. Start Development Server
@@ -288,6 +295,7 @@ npx supabase functions deploy record-transaction
 npx supabase functions deploy alchemy-webhook
 npx supabase functions deploy helius-webhook
 npx supabase functions deploy verify-destination
+npx supabase functions deploy sui-webhook
 ```
 
 #### F. Start Development Server
@@ -348,6 +356,11 @@ NEXT_PUBLIC_DEFAULT_PAYMENT_EXPIRY=15 # minutes
 
 // Solana
 - Mainnet Beta (Cluster: mainnet-beta)
+
+// Sui
+- Testnet (Network: testnet)
+- Native token: SUI (9 decimals / MIST)
+- Verification: RPC polling via sui-webhook edge function
 ```
 
 ### Token List
@@ -496,6 +509,26 @@ justpay.wtf/
 12. Creator receives email notification
 ```
 
+### Sui Payment Flow
+
+```
+1. Payer opens link: justpay.wtf/pay/abc12345 (chain: sui)
+2. Sees payment details (amount in SUI, recipient, expiry)
+3. Connects Sui Wallet (Sui Wallet, Martian, Suiet, OKX Wallet)
+4. Reviews transaction — amount in SUI + gas estimate
+5. Signs and submits transaction via @mysten/dapp-kit
+6. Frontend receives transaction digest
+7. Frontend calls /functions/v1/sui-webhook with digest + expected amount
+8. Edge function polls Sui RPC → verifies balance change + finality
+9. Marks payment_links status → 'completed'
+10. Supabase Realtime fires → frontend shows "Payment confirmed ✓"
+11. Creator receives email notification via Resend
+```
+
+> **Note:** Sui uses RPC polling for payment verification instead of push webhooks
+> (no Alchemy/Helius equivalent exists for Sui). The `sui-webhook` edge function
+> is called client-side after transaction submission.
+
 ### Webhook Verification Flow
 
 ```
@@ -508,6 +541,21 @@ Alchemy/Helius Webhook → Supabase Edge Function:
 6. Broadcast via Supabase Realtime to payer
 7. Send email to creator
 8. Log to transactions table
+```
+
+### Sui Webhook (RPC Polling) Flow
+
+```
+Frontend → sui-webhook Edge Function:
+1. Frontend submits tx → receives digest from @mysten/dapp-kit
+2. Frontend POST to /functions/v1/sui-webhook with { link_id, tx_digest, recipient_address, expected_amount }
+3. Edge function calls sui_getTransactionBlock via Sui RPC
+4. Validates: effects.status === 'success'
+5. Validates: sum of positive balanceChanges to recipient >= expected_amount * 0.999
+6. Updates payment_links.status to 'completed' (with idempotency guard)
+7. Inserts into transactions table (payer_chain: 'sui', amount_paid, token_paid: 'SUI')
+8. Supabase Realtime broadcasts to payer frontend
+9. Email sent to creator via Resend
 ```
 
 ---
@@ -534,6 +582,13 @@ Create a new payment link.
   }
 }
 ```
+
+**Valid `chain` values:** `ethereum` | `arbitrum` | `optimism` | `polygon` | `base` | `solana` | `sui`
+
+**Sui-specific notes:**
+- `recipient_address` must be a valid Sui address (`0x` + 64 hex characters)
+- `token_address` must be `0x2::sui::SUI` for native SUI transfers on testnet
+- Payment verification uses RPC polling instead of push webhooks
 
 **Response:**
 
@@ -630,6 +685,17 @@ Prevents "insufficient gas" failures:
 - Validates user has >= 0.005 ETH (or Solana rent)
 - Locks "Pay" button with helpful error message
 
+### Resolution 7: Sui RPC Payment Verification
+
+Handles Sui payments without push webhook infrastructure:
+
+- **Challenge**: Sui has no Alchemy/Helius equivalent for push webhooks
+- **Solution**: Client-side trigger — frontend calls `sui-webhook` edge function after tx submission
+- **Verification**: `sui_getTransactionBlock` RPC call validates `effects.status === 'success'`
+- **Amount check**: Sums `balanceChanges` for recipient address with 0.1% tolerance buffer
+- **Idempotency**: `.eq('status', 'pending')` guard on `payment_links` update prevents duplicate processing
+- **Finality**: Sui achieves transaction finality in ~400ms — no block depth wait needed
+
 ---
 
 ## 🔐 Environment Variables Reference
@@ -677,7 +743,11 @@ NEXT_PUBLIC_APP_NAME=justpay.wtf
 NEXT_PUBLIC_SHORT_DOMAIN=justpay.wtf
 NEXT_PUBLIC_DEFAULT_PAYMENT_EXPIRY=15
 NEXT_PUBLIC_PRICE_CACHE_TTL=60
-NEXT_PUBLIC_NETWORKS_ENABLED=solana,ethereum,arbitrum,optimism,polygon,base
+NEXT_PUBLIC_NETWORKS_ENABLED=solana,ethereum,arbitrum,optimism,polygon,base,sui
+
+# Sui (testnet)
+NEXT_PUBLIC_SUI_NETWORK=testnet
+NEXT_PUBLIC_SUI_RPC_URL=https://fullnode.testnet.sui.io:443
 ```
 
 ---
@@ -710,6 +780,7 @@ npx supabase functions deploy record-transaction --project-ref [PROJECT_ID]
 npx supabase functions deploy alchemy-webhook --project-ref [PROJECT_ID]
 npx supabase functions deploy helius-webhook --project-ref [PROJECT_ID]
 npx supabase functions deploy verify-destination --project-ref [PROJECT_ID]
+npx supabase functions deploy sui-webhook --project-ref [PROJECT_ID]
 ```
 
 ### Configure Webhooks in Alchemy/Helius
@@ -901,6 +972,7 @@ This project is licensed under the [MIT License](./LICENSE).
 Built with love by the justpay.wtf team. Special thanks to:
 
 - **Solana** ecosystem for wallet adapters
+- **Sui Foundation** for @mysten/sui SDK and testnet infrastructure
 - **0x Protocol** for swap infrastructure
 - **Alchemy & Helius** for reliable webhooks
 - **Supabase** for database & edge computing
