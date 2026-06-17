@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { verifyLifiTransaction } from '../shared/lifi-verifier.ts'
 
 // Alchemy Notify payload format
 // https://docs.alchemy.com/reference/notify-api
@@ -34,45 +35,11 @@ serve(async (req) => {
         continue
       }
 
-      // 2. Mark payment link as completed
-      const { error: updateError } = await supabase
-        .from('payment_links')
-        .update({ status: 'completed' })
-        .eq('id', txData.link_id)
-        .eq('status', 'active') // Only update if still active (idempotency lock)
-
-      if (updateError) {
-        console.error(`Failed to update link ${txData.link_id} or already completed.`)
-        continue
-      }
-
-      // 3. Dispatch Email Alert
-      const merchantEmail = txData.payment_links.email_alert
-      if (merchantEmail && resendApiKey) {
-        // Idempotency for email to prevent double-sends
-        const { error: logError } = await supabase
-          .from('email_logs')
-          .insert({
-            link_id: txData.link_id,
-            sent_to: merchantEmail,
-            event_type: 'payment_received'
-          })
-
-        if (!logError) {
-          await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${resendApiKey}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              from: 'justpay.wtf <notifications@justpay.wtf>',
-              to: [merchantEmail],
-              subject: 'Payment Received!',
-              html: `<p>Your payment link has been successfully fulfilled via Ethereum.</p><p>Transaction: ${txHash}</p>`
-            })
-          })
-        }
+      // 2. Poll LI.FI API and dispatch emails / state updates via shared verifier
+      try {
+        await verifyLifiTransaction(supabase, resendApiKey, txData)
+      } catch (lifiErr) {
+        console.error(`Failed to verify LIFI status for tx ${txHash}:`, lifiErr)
       }
     }
 
