@@ -1,0 +1,17 @@
+overrides:
+  react: $react
+  react-dom: $react-dom
+  ws: ^8.21.0
+  postcss: ^8.5.10
+
+onlyBuiltDependencies:
+  - "@stellar/stellar-sdk"
+  - bigint-buffer
+  - blake-hash
+  - bufferutil
+  - protobufjs
+  - sharp
+  - tiny-secp256k1
+  - unrs-resolver
+  - usb
+  - utf-8-validate
