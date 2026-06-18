@@ -1,404 +1,762 @@
-# Phase 1: Fix Current Prototype — Implementation Plan
+# Phase 1: Migrate to Convex + Fix Prototype — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Get the existing prototype working end-to-end on testnets (Base Sepolia + Solana Devnet + Sui Testnet) by fixing schema drift, TypeScript errors, and broken edge function queries.
+**Goal:** Replace Supabase with Convex as the backend, fix TypeScript errors, and get the payment link flow working end-to-end on testnets. This eliminates all schema drift issues and gives us automatic real-time reactivity.
 
-**Architecture:** Keep current architecture (Supabase + Next.js + LI.FI), but align all code to the latest migration schema and fix type mismatches. This phase produces a testable baseline before Phase 2 introduces smart contracts.
+**Architecture:** Next.js frontend talks to Convex (reactive DB + server functions) for all data operations. Wallet execution still happens client-side via wagmi/wallet-adapter/dapp-kit. On-chain webhooks hit Convex HTTP actions to index events.
 
-**Tech Stack:** Next.js 16, TypeScript, Supabase Edge Functions (Deno), @solana/web3.js, wagmi/viem, @mysten/sui, LI.FI SDK v4
+**Tech Stack:** Next.js 16, React 19, Convex, TypeScript, @solana/web3.js, wagmi/viem, @mysten/dapp-kit, LI.FI SDK v4
 
 ---
 
-### Task 1: Fix CheckoutClient TypeScript Error
+### Task 1: Initialize Convex Project
 
 **Files:**
-- Modify: `src/app/[linkId]/CheckoutClient.tsx`
-- Modify: `src/app/[linkId]/page.tsx`
+- Create: `convex/schema.ts`
+- Create: `convex/tsconfig.json`
+- Modify: `package.json` (add convex dependency)
+- Create: `.env.local` (add CONVEX_URL)
 
-The `chain` prop type is `'ethereum' | 'solana' | 'sui'` but the code compares it to `'base'`, `'sepolia'`, `'baseSepolia'`. The issue is that the page passes the raw `destination_chain` from the DB which can only be those 3 values, but the component logic expects EVM sub-chains.
+- [ ] **Step 1: Install Convex**
 
-- [ ] **Step 1: Update CheckoutClient props type and initial state logic**
-
-Change the `chain` prop to accept all valid destination chains from the network config, and fix the comparison:
-
-```tsx
-// src/app/[linkId]/CheckoutClient.tsx
-interface CheckoutClientProps {
-  linkId: string
-  chain: string  // destination chain key from network config
-  recipientAddress: string
-  tokenSymbol: string
-  amount: string
-}
-
-export function CheckoutClient({ linkId, chain, recipientAddress, tokenSymbol, amount }: CheckoutClientProps) {
-  const isDestTestnet = getChainConfig(chain)?.isTestnet;
-  const chainFamily = getChainConfig(chain)?.family;
-  
-  const [payerChain, setPayerChain] = useState<string>(
-    chainFamily === 'ethereum'
-      ? chain 
-      : (isDestTestnet ? 'sepolia' : 'ethereum')
-  )
+```bash
+pnpm add convex
+pnpm exec convex init
 ```
 
-- [ ] **Step 2: Verify TypeScript compiles**
+- [ ] **Step 2: Write the schema**
 
-Run: `pnpm build 2>&1 | grep -A2 "Type error"` 
-Expected: No type errors
+```typescript
+// convex/schema.ts
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+export default defineSchema({
+  paymentLinks: defineTable({
+    shortCode: v.string(),
+    linkType: v.union(v.literal("invoice"), v.literal("tip_jar"), v.literal("recurring")),
+
+    // Destination
+    merchantAddress: v.string(),
+    destinationChain: v.union(v.literal("base"), v.literal("solana"), v.literal("sui")),
+    destinationTokenAddress: v.optional(v.string()),
+    destinationTokenSymbol: v.string(),
+
+    // Amount (undefined for tip_jar)
+    amount: v.optional(v.string()),
+
+    // Metadata
+    label: v.optional(v.string()),
+    memo: v.optional(v.string()),
+    merchantEmail: v.optional(v.string()),
+
+    // Lifecycle
+    status: v.union(
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("expired"),
+      v.literal("cancelled")
+    ),
+    expiresAt: v.optional(v.number()),
+
+    // On-chain reference
+    linkIdHash: v.string(),
+  })
+    .index("by_shortCode", ["shortCode"])
+    .index("by_merchant", ["merchantAddress"])
+    .index("by_status", ["status"]),
+
+  transactions: defineTable({
+    linkId: v.id("paymentLinks"),
+
+    // Source (payer)
+    payerAddress: v.string(),
+    sourceChain: v.string(),
+    sourceToken: v.optional(v.string()),
+    sourceTxHash: v.string(),
+    sourceAmount: v.string(),
+
+    // Destination (result)
+    destinationTxHash: v.optional(v.string()),
+    destinationAmount: v.optional(v.string()),
+
+    // LI.FI routing
+    lifiRouteId: v.optional(v.string()),
+    bridgeUsed: v.optional(v.string()),
+
+    // Fees
+    protocolFee: v.optional(v.string()),
+
+    // Status
+    status: v.union(
+      v.literal("pending"),
+      v.literal("bridging"),
+      v.literal("confirmed"),
+      v.literal("failed"),
+      v.literal("refunded")
+    ),
+    confirmedAt: v.optional(v.number()),
+  })
+    .index("by_link", ["linkId"])
+    .index("by_sourceTxHash", ["sourceTxHash"]),
+});
+```
+
+- [ ] **Step 3: Deploy schema to Convex dev**
+
+```bash
+pnpm exec convex dev
+```
+
+Expected: Schema deploys successfully, Convex dashboard shows tables.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add convex/ package.json pnpm-lock.yaml .env.local
+git commit -m "feat: initialize Convex project with schema"
+```
+
+---
+
+### Task 2: Write Convex Mutations (Create Link + Record Transaction)
+
+**Files:**
+- Create: `convex/links.ts`
+- Create: `convex/transactions.ts`
+
+- [ ] **Step 1: Write createLink mutation**
+
+```typescript
+// convex/links.ts
+import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
+import { createHash } from "crypto";
+
+function generateShortCode(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < 7; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+function computeLinkIdHash(shortCode: string): string {
+  return "0x" + createHash("sha256").update(shortCode).digest("hex");
+}
+
+export const createLink = mutation({
+  args: {
+    merchantAddress: v.string(),
+    destinationChain: v.union(v.literal("base"), v.literal("solana"), v.literal("sui")),
+    destinationTokenSymbol: v.string(),
+    destinationTokenAddress: v.optional(v.string()),
+    amount: v.optional(v.string()),
+    label: v.optional(v.string()),
+    memo: v.optional(v.string()),
+    merchantEmail: v.optional(v.string()),
+    expiresAt: v.optional(v.number()),
+    linkType: v.optional(v.union(v.literal("invoice"), v.literal("tip_jar"), v.literal("recurring"))),
+  },
+  handler: async (ctx, args) => {
+    const shortCode = generateShortCode();
+    const linkIdHash = computeLinkIdHash(shortCode);
+
+    const id = await ctx.db.insert("paymentLinks", {
+      shortCode,
+      linkType: args.linkType ?? "invoice",
+      merchantAddress: args.merchantAddress,
+      destinationChain: args.destinationChain,
+      destinationTokenSymbol: args.destinationTokenSymbol,
+      destinationTokenAddress: args.destinationTokenAddress,
+      amount: args.amount,
+      label: args.label,
+      memo: args.memo,
+      merchantEmail: args.merchantEmail,
+      status: "active",
+      expiresAt: args.expiresAt,
+      linkIdHash,
+    });
+
+    return { id, shortCode, linkIdHash };
+  },
+});
+
+export const getLinkByShortCode = query({
+  args: { shortCode: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("paymentLinks")
+      .withIndex("by_shortCode", (q) => q.eq("shortCode", args.shortCode))
+      .unique();
+  },
+});
+
+export const getLinksByMerchant = query({
+  args: { merchantAddress: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("paymentLinks")
+      .withIndex("by_merchant", (q) => q.eq("merchantAddress", args.merchantAddress))
+      .order("desc")
+      .collect();
+  },
+});
+```
+
+- [ ] **Step 2: Write recordTransaction mutation**
+
+```typescript
+// convex/transactions.ts
+import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
+
+export const recordTransaction = mutation({
+  args: {
+    linkId: v.id("paymentLinks"),
+    payerAddress: v.string(),
+    sourceChain: v.string(),
+    sourceToken: v.optional(v.string()),
+    sourceTxHash: v.string(),
+    sourceAmount: v.string(),
+    lifiRouteId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("transactions", {
+      linkId: args.linkId,
+      payerAddress: args.payerAddress,
+      sourceChain: args.sourceChain,
+      sourceToken: args.sourceToken,
+      sourceTxHash: args.sourceTxHash,
+      sourceAmount: args.sourceAmount,
+      lifiRouteId: args.lifiRouteId,
+      status: "pending",
+    });
+  },
+});
+
+export const confirmTransaction = mutation({
+  args: {
+    sourceTxHash: v.string(),
+    destinationTxHash: v.optional(v.string()),
+    destinationAmount: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const tx = await ctx.db
+      .query("transactions")
+      .withIndex("by_sourceTxHash", (q) => q.eq("sourceTxHash", args.sourceTxHash))
+      .unique();
+
+    if (!tx) throw new Error("Transaction not found");
+
+    await ctx.db.patch(tx._id, {
+      status: "confirmed",
+      confirmedAt: Date.now(),
+      destinationTxHash: args.destinationTxHash,
+      destinationAmount: args.destinationAmount,
+    });
+
+    // Update link status if it's a one-time invoice
+    const link = await ctx.db.get(tx.linkId);
+    if (link && link.linkType === "invoice") {
+      await ctx.db.patch(link._id, { status: "completed" });
+    }
+  },
+});
+
+export const getTransactionsByLink = query({
+  args: { linkId: v.id("paymentLinks") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("transactions")
+      .withIndex("by_link", (q) => q.eq("linkId", args.linkId))
+      .order("desc")
+      .collect();
+  },
+});
+
+export const getTransactionsByMerchant = query({
+  args: { merchantAddress: v.string() },
+  handler: async (ctx, args) => {
+    // Get all links for this merchant, then get their transactions
+    const links = await ctx.db
+      .query("paymentLinks")
+      .withIndex("by_merchant", (q) => q.eq("merchantAddress", args.merchantAddress))
+      .collect();
+
+    const linkIds = links.map((l) => l._id);
+    const allTxs = [];
+
+    for (const linkId of linkIds) {
+      const txs = await ctx.db
+        .query("transactions")
+        .withIndex("by_link", (q) => q.eq("linkId", linkId))
+        .collect();
+      allTxs.push(...txs);
+    }
+
+    return allTxs.sort((a, b) => b._creationTime - a._creationTime);
+  },
+});
+```
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/app/[linkId]/CheckoutClient.tsx
-git commit -m "fix: CheckoutClient chain type comparison error"
+git add convex/links.ts convex/transactions.ts
+git commit -m "feat: add Convex mutations and queries for links and transactions"
 ```
 
 ---
 
-### Task 2: Consolidate Database Schema
+### Task 3: Write Convex HTTP Actions (Webhook Receivers)
 
 **Files:**
-- Create: `supabase/migrations/20240618000001_schema_consolidation.sql`
+- Create: `convex/http.ts`
+- Create: `convex/webhooks.ts`
 
-The current schema has drift between what migrations expect and what edge functions write. Create a migration that explicitly sets the final column names.
+- [ ] **Step 1: Write HTTP action router**
 
-- [ ] **Step 1: Write consolidation migration**
+```typescript
+// convex/http.ts
+import { httpRouter } from "convex/server";
+import { handleAlchemyWebhook, handleHeliusWebhook } from "./webhooks";
 
-```sql
--- 20240618000001_schema_consolidation.sql
--- Consolidate schema to final column naming convention
+const http = httpRouter();
 
--- Ensure payment_links has correct columns
-DO $$ BEGIN
-  -- Add link_type if not exists
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='payment_links' AND column_name='link_type') THEN
-    ALTER TABLE payment_links ADD COLUMN link_type VARCHAR(20) DEFAULT 'invoice';
-  END IF;
-  
-  -- Ensure destination_chain exists (was creator_chain)
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='payment_links' AND column_name='creator_chain') 
-     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='payment_links' AND column_name='destination_chain') THEN
-    ALTER TABLE payment_links RENAME COLUMN creator_chain TO destination_chain;
-  END IF;
-  
-  -- Ensure destination columns exist
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='payment_links' AND column_name='creator_address') 
-     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='payment_links' AND column_name='merchant_address') THEN
-    ALTER TABLE payment_links RENAME COLUMN creator_address TO merchant_address;
-  END IF;
-  
-  -- Add merchant_email alias
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='payment_links' AND column_name='merchant_email') THEN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='payment_links' AND column_name='creator_email') THEN
-      ALTER TABLE payment_links RENAME COLUMN creator_email TO merchant_email;
-    ELSE
-      ALTER TABLE payment_links ADD COLUMN merchant_email VARCHAR(255);
-    END IF;
-  END IF;
-END $$;
+http.route({
+  path: "/webhooks/alchemy",
+  method: "POST",
+  handler: handleAlchemyWebhook,
+});
 
--- Ensure transactions has correct columns
-DO $$ BEGIN
-  -- Rename payer_chain -> source_chain if old name still exists
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='payer_chain') 
-     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='source_chain') THEN
-    ALTER TABLE payment_links RENAME COLUMN payer_chain TO source_chain;
-  END IF;
-  
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='tx_hash') 
-     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='source_tx_hash') THEN
-    ALTER TABLE transactions RENAME COLUMN tx_hash TO source_tx_hash;
-  END IF;
-  
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='token_paid') 
-     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='source_token') THEN
-    ALTER TABLE transactions RENAME COLUMN token_paid TO source_token;
-  END IF;
+http.route({
+  path: "/webhooks/helius",
+  method: "POST",
+  handler: handleHeliusWebhook,
+});
 
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='amount_paid') 
-     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='source_amount') THEN
-    ALTER TABLE transactions RENAME COLUMN amount_paid TO source_amount;
-  END IF;
-  
-  -- Add missing columns
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='destination_tx_hash') THEN
-    ALTER TABLE transactions ADD COLUMN destination_tx_hash VARCHAR(128);
-  END IF;
-  
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='destination_amount') THEN
-    ALTER TABLE transactions ADD COLUMN destination_amount DECIMAL(28,18);
-  END IF;
-  
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='protocol_fee') THEN
-    ALTER TABLE transactions ADD COLUMN protocol_fee DECIMAL(28,18) DEFAULT 0;
-  END IF;
-  
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='lifi_route_id') THEN
-    ALTER TABLE transactions ADD COLUMN lifi_route_id VARCHAR(128);
-  END IF;
-  
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='confirmed_at') THEN
-    ALTER TABLE transactions ADD COLUMN confirmed_at TIMESTAMPTZ;
-  END IF;
-END $$;
+export default http;
+```
 
--- Update status constraint on transactions to include all valid states
-ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_status_check;
-ALTER TABLE transactions ADD CONSTRAINT transactions_status_check 
-  CHECK (status IN ('pending', 'bridging', 'confirmed', 'failed', 'refunded'));
+- [ ] **Step 2: Write webhook handlers**
 
--- Update status constraint on payment_links
-ALTER TABLE payment_links DROP CONSTRAINT IF EXISTS payment_links_status_check;
-ALTER TABLE payment_links ADD CONSTRAINT payment_links_status_check 
-  CHECK (status IN ('active', 'completed', 'expired', 'cancelled', 'pending', 'bridging', 'partial', 'failed'));
+```typescript
+// convex/webhooks.ts
+import { httpAction } from "./_generated/server";
+import { api } from "./_generated/api";
+
+export const handleAlchemyWebhook = httpAction(async (ctx, request) => {
+  const body = await request.json();
+
+  // Extract tx hash from Alchemy webhook payload
+  const activities = body?.event?.activity || [];
+  for (const activity of activities) {
+    const txHash = activity.hash;
+    if (!txHash) continue;
+
+    try {
+      await ctx.runMutation(api.transactions.confirmTransaction, {
+        sourceTxHash: txHash,
+      });
+    } catch (e) {
+      // Transaction not found in our DB — ignore (not our payment)
+      console.log(`Ignoring tx ${txHash}: not found in DB`);
+    }
+  }
+
+  return new Response("OK", { status: 200 });
+});
+
+export const handleHeliusWebhook = httpAction(async (ctx, request) => {
+  const body = await request.json();
+
+  // Helius sends an array of transactions
+  const transactions = Array.isArray(body) ? body : [body];
+  for (const tx of transactions) {
+    const signature = tx.signature || tx.transaction?.signatures?.[0];
+    if (!signature) continue;
+
+    try {
+      await ctx.runMutation(api.transactions.confirmTransaction, {
+        sourceTxHash: signature,
+      });
+    } catch (e) {
+      console.log(`Ignoring sig ${signature}: not found in DB`);
+    }
+  }
+
+  return new Response("OK", { status: 200 });
+});
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add convex/http.ts convex/webhooks.ts
+git commit -m "feat: add Convex HTTP actions for Alchemy/Helius webhooks"
+```
+
+---
+
+### Task 4: Write Convex Cron for Link Expiry
+
+**Files:**
+- Create: `convex/crons.ts`
+
+- [ ] **Step 1: Write expiry cron**
+
+```typescript
+// convex/crons.ts
+import { cronJobs } from "convex/server";
+import { internal } from "./_generated/api";
+import { internalMutation } from "./_generated/server";
+
+export const expireLinks = internalMutation({
+  handler: async (ctx) => {
+    const now = Date.now();
+    const activeLinks = await ctx.db
+      .query("paymentLinks")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .collect();
+
+    for (const link of activeLinks) {
+      if (link.expiresAt && link.expiresAt < now) {
+        await ctx.db.patch(link._id, { status: "expired" });
+      }
+    }
+  },
+});
+
+const crons = cronJobs();
+
+crons.interval("expire stale links", { minutes: 1 }, internal.crons.expireLinks);
+
+export default crons;
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
-git add supabase/migrations/20240618000001_schema_consolidation.sql
-git commit -m "fix: consolidate DB schema with final column names and constraints"
+git add convex/crons.ts
+git commit -m "feat: add Convex cron for automatic link expiry"
 ```
 
 ---
 
-### Task 3: Fix record-transaction Edge Function
+### Task 5: Add Convex Provider to Frontend
 
 **Files:**
-- Modify: `supabase/functions/record-transaction/index.ts`
+- Modify: `src/app/layout.tsx`
+- Create: `src/providers/ConvexClientProvider.tsx`
 
-This function writes old column names. Update to match consolidated schema.
-
-- [ ] **Step 1: Update column names in the insert**
-
-The function currently inserts `payer_chain`, `tx_hash`, `token_paid`, `amount_paid`. Update to `source_chain`, `source_tx_hash`, `source_token`, `source_amount`.
+- [ ] **Step 1: Create Convex provider component**
 
 ```typescript
-// supabase/functions/record-transaction/index.ts
-// In the insert call, change the column mapping:
-const { data, error } = await supabase
-  .from('transactions')
-  .insert({
-    link_id: body.link_id,
-    payer_address: body.payer_address,
-    source_chain: body.payer_chain,
-    source_tx_hash: body.tx_hash,
-    source_token: body.token_symbol,
-    source_amount: body.amount,
-    lifi_route_id: body.lifi_route_id || null,
-    status: 'pending',
-  })
-  .select()
-  .single();
+// src/providers/ConvexClientProvider.tsx
+"use client";
+
+import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { ReactNode } from "react";
+
+const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+
+export function ConvexClientProvider({ children }: { children: ReactNode }) {
+  return <ConvexProvider client={convex}>{children}</ConvexProvider>;
+}
 ```
 
-- [ ] **Step 2: Test locally with Supabase CLI**
+- [ ] **Step 2: Wrap layout with ConvexClientProvider**
 
-Run: `supabase functions serve record-transaction --env-file .env.local`
-Expected: Function starts without import errors
+In `src/app/layout.tsx`, wrap the existing `<Web3Provider>` with `<ConvexClientProvider>`:
+
+```tsx
+import { ConvexClientProvider } from "@/providers/ConvexClientProvider";
+
+// In the body:
+<ConvexClientProvider>
+  <Web3Provider>
+    {/* ... existing content ... */}
+  </Web3Provider>
+</ConvexClientProvider>
+```
+
+- [ ] **Step 3: Add NEXT_PUBLIC_CONVEX_URL to .env.local**
+
+```
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/providers/ConvexClientProvider.tsx src/app/layout.tsx .env.local
+git commit -m "feat: add Convex provider to app layout"
+```
+
+---
+
+### Task 6: Migrate CreateLinkForm to Convex
+
+**Files:**
+- Modify: `src/components/CreateLinkForm.tsx`
+- Delete: `src/lib/payment.ts`
+
+- [ ] **Step 1: Replace Supabase call with Convex mutation**
+
+```typescript
+// In CreateLinkForm.tsx, replace the import and handleCreate:
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+
+// Inside the component:
+const createLinkMutation = useMutation(api.links.createLink);
+
+const handleCreate = async () => {
+  if (!address || !amount) return;
+  setIsLoading(true);
+
+  try {
+    let expiresAt: number | undefined;
+    const now = Date.now();
+    if (expiry === '15m') expiresAt = now + 15 * 60 * 1000;
+    else if (expiry === '1h') expiresAt = now + 60 * 60 * 1000;
+    else if (expiry === '24h') expiresAt = now + 24 * 60 * 60 * 1000;
+    else if (expiry === '7d') expiresAt = now + 7 * 24 * 60 * 60 * 1000;
+
+    const result = await createLinkMutation({
+      merchantAddress: address,
+      destinationChain: chain,
+      destinationTokenSymbol: tokenSymbol,
+      destinationTokenAddress: chain === 'sui' ? '0x2::sui::SUI' : undefined,
+      amount,
+      merchantEmail: email || undefined,
+      memo: memo || undefined,
+      label: 'justpay.wtf Payment',
+      expiresAt,
+      linkType: 'invoice',
+    });
+
+    router.push(`/${result.shortCode}`);
+  } catch (error: any) {
+    console.error(error);
+    alert(error.message || 'Failed to create link');
+  } finally {
+    setIsLoading(false);
+  }
+};
+```
+
+- [ ] **Step 2: Remove src/lib/payment.ts (no longer needed)**
+
+```bash
+rm src/lib/payment.ts
+```
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add supabase/functions/record-transaction/index.ts
-git commit -m "fix: align record-transaction with consolidated schema column names"
+git add src/components/CreateLinkForm.tsx
+git rm src/lib/payment.ts
+git commit -m "feat: migrate CreateLinkForm to Convex mutation"
 ```
 
 ---
 
-### Task 4: Fix Webhook Functions
+### Task 7: Migrate Checkout Page to Convex
 
 **Files:**
-- Modify: `supabase/functions/alchemy-webhook/index.ts`
-- Modify: `supabase/functions/helius-webhook/index.ts`
+- Modify: `src/app/[linkId]/page.tsx`
+- Modify: `src/app/[linkId]/CheckoutClient.tsx`
 
-Both webhooks query old column names (`tx_hash`, `email_alert`).
+- [ ] **Step 1: Rewrite page.tsx to use Convex query**
 
-- [ ] **Step 1: Update alchemy-webhook queries**
-
-Replace `tx_hash` references with `source_tx_hash`, update payment_links queries to use `merchant_email` instead of `email_alert`:
+The checkout page needs to fetch link data. Since it's a server component, use `fetchQuery` from `convex/nextjs`:
 
 ```typescript
-// In alchemy-webhook/index.ts, update the transaction lookup:
-const { data: txRecord } = await supabase
-  .from('transactions')
-  .select('id, link_id, status')
-  .eq('source_tx_hash', txHash)
-  .single();
+// src/app/[linkId]/page.tsx
+import { fetchQuery } from "convex/nextjs";
+import { api } from "../../../convex/_generated/api";
+import { CheckoutClient } from "./CheckoutClient";
 
-// Update the payment_links query:
-const { data: link } = await supabase
-  .from('payment_links')
-  .select('id, merchant_email, merchant_address, status')
-  .eq('id', txRecord.link_id)
-  .single();
+export default async function CheckoutPage({ params }: { params: { linkId: string } }) {
+  const link = await fetchQuery(api.links.getLinkByShortCode, { shortCode: params.linkId });
+
+  if (!link) {
+    return <div className="text-center p-8">Link not found</div>;
+  }
+
+  if (link.status === "expired") {
+    return <div className="text-center p-8">This payment link has expired</div>;
+  }
+
+  return (
+    <CheckoutClient
+      linkId={link._id}
+      shortCode={link.shortCode}
+      chain={link.destinationChain}
+      recipientAddress={link.merchantAddress}
+      tokenSymbol={link.destinationTokenSymbol}
+      amount={link.amount || "0"}
+    />
+  );
+}
 ```
 
-- [ ] **Step 2: Update helius-webhook queries identically**
+- [ ] **Step 2: Fix CheckoutClient chain type**
 
-Same pattern — replace `tx_hash` with `source_tx_hash` and `email_alert` with `merchant_email`.
+Change the `chain` prop type from `'ethereum' | 'solana' | 'sui'` to `string` and fix the comparison logic using chain family:
+
+```typescript
+interface CheckoutClientProps {
+  linkId: string;
+  shortCode: string;
+  chain: string;
+  recipientAddress: string;
+  tokenSymbol: string;
+  amount: string;
+}
+```
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add supabase/functions/alchemy-webhook/index.ts supabase/functions/helius-webhook/index.ts
-git commit -m "fix: align webhook functions with consolidated schema"
+git add src/app/[linkId]/page.tsx src/app/[linkId]/CheckoutClient.tsx
+git commit -m "feat: migrate checkout page to Convex query, fix chain type"
 ```
 
 ---
 
-### Task 5: Fix LI.FI Verifier
+### Task 8: Migrate SmartButton to Record Transaction via Convex
 
 **Files:**
-- Modify: `supabase/functions/shared/lifi-verifier.ts`
+- Modify: `src/components/SmartButton.tsx`
 
-The verifier references `source_tx_hash`, `source_chain` (correct) but writes to `email_logs` with wrong columns and updates transaction status to `bridging` which was previously invalid (now fixed by Task 2).
-
-- [ ] **Step 1: Fix email_logs insert to use correct schema**
-
-The base migration defines email_logs with `to_email` and `template`. Update the verifier:
+- [ ] **Step 1: Replace Supabase record-transaction call with Convex mutation**
 
 ```typescript
-// In shared/lifi-verifier.ts, fix the email notification insert:
-await supabase.from('email_logs').insert({
-  to_email: link.merchant_email,
-  template: 'payment_confirmed',
-  link_id: transaction.link_id,
-  sent_at: new Date().toISOString(),
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { Id } from "../../convex/_generated/dataModel";
+
+// Inside component:
+const recordTx = useMutation(api.transactions.recordTransaction);
+
+// After successful wallet execution, replace the fetch call:
+await recordTx({
+  linkId: linkId as Id<"paymentLinks">,
+  payerAddress: address,
+  sourceChain: payerChain,
+  sourceToken: inputTokenAddress || undefined,
+  sourceTxHash: txHash,
+  sourceAmount: amount,
+  lifiRouteId: lifiRouteId || undefined,
 });
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
-git add supabase/functions/shared/lifi-verifier.ts
-git commit -m "fix: align lifi-verifier with email_logs schema"
+git add src/components/SmartButton.tsx
+git commit -m "feat: migrate SmartButton to Convex recordTransaction mutation"
 ```
 
 ---
 
-### Task 6: Fix create-link Edge Function
+### Task 9: Migrate Dashboard to Convex Reactive Queries
 
 **Files:**
-- Modify: `supabase/functions/create-link/index.ts`
+- Modify: `src/app/dashboard/page.tsx`
+- Modify: `src/app/dashboard/history/page.tsx`
+- Modify: `src/app/dashboard/links/page.tsx`
 
-This function inserts with old column names (`creator_address`, `creator_chain`, `creator_email`).
-
-- [ ] **Step 1: Update insert to use new column names**
+- [ ] **Step 1: Rewrite dashboard overview**
 
 ```typescript
-// In create-link/index.ts, update the insert:
-const { data, error } = await supabase
-  .from('payment_links')
-  .insert({
-    short_code: shortCode,
-    merchant_address: body.creatorAddress,
-    destination_chain: body.creatorChain,
-    destination_token_symbol: body.tokenSymbol,
-    destination_token_address: body.tokenAddress || null,
-    amount: body.amount,
-    merchant_email: body.creatorEmail || null,
-    memo: body.memo || null,
-    label: body.label || null,
-    expires_at: body.expiresAt || null,
-    link_type: 'invoice',
-    status: 'active',
-  })
-  .select()
-  .single();
+// src/app/dashboard/page.tsx
+"use client";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+
+// Inside component:
+const links = useQuery(api.links.getLinksByMerchant, 
+  address ? { merchantAddress: address } : "skip"
+);
+const transactions = useQuery(api.transactions.getTransactionsByMerchant,
+  address ? { merchantAddress: address } : "skip"
+);
+
+// These auto-update in real-time when new payments arrive!
+const activeLinks = links?.filter(l => l.status === "active").length ?? 0;
+const totalVolume = transactions?.reduce((sum, tx) => sum + Number(tx.sourceAmount), 0) ?? 0;
 ```
 
-- [ ] **Step 2: Update the response to use consistent naming**
+- [ ] **Step 2: Rewrite history page similarly**
 
-Ensure the response returns `short_code` field properly.
+Replace Supabase queries with `useQuery(api.transactions.getTransactionsByMerchant, ...)`.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add supabase/functions/create-link/index.ts
-git commit -m "fix: align create-link with consolidated schema"
+git add src/app/dashboard/page.tsx src/app/dashboard/history/page.tsx src/app/dashboard/links/page.tsx
+git commit -m "feat: migrate dashboard to Convex reactive queries"
 ```
 
 ---
 
-### Task 7: Fix Frontend payment.ts and Dashboard Queries
+### Task 10: Remove Supabase Dependencies
 
 **Files:**
-- Modify: `src/lib/payment.ts`
-- Modify: `src/app/dashboard/page.tsx`
-- Modify: `src/app/dashboard/history/page.tsx`
-- Modify: `src/app/[linkId]/page.tsx`
+- Modify: `package.json`
+- Delete: `src/lib/supabase.ts`
+- Delete: `supabase/` directory (migrations, functions, config)
+- Delete: `src/app/api/v1/links/route.ts` (replaced by Convex)
 
-- [ ] **Step 1: Update payment.ts field mapping**
-
-Ensure the request body sent to create-link matches what the edge function expects.
-
-- [ ] **Step 2: Update dashboard page queries**
-
-Change `creator_address` → `merchant_address`, `amount_paid` → `source_amount`, `token_paid` → `source_token` in Supabase queries.
-
-```typescript
-// src/app/dashboard/page.tsx
-const { data: links } = await supabase
-  .from('payment_links')
-  .select('id, amount, status, created_at')
-  .eq('merchant_address', address);
-
-// For transactions
-const { data: txs } = await supabase
-  .from('transactions')
-  .select('id, source_amount, status, created_at, source_token')
-  .in('link_id', linkIds);
-```
-
-- [ ] **Step 3: Update history page queries**
-
-```typescript
-// src/app/dashboard/history/page.tsx
-const { data } = await supabase
-  .from('transactions')
-  .select(`
-    id, source_tx_hash, source_amount, source_token,
-    source_chain, status, created_at,
-    payment_links!inner(short_code, merchant_address)
-  `)
-  .eq('payment_links.merchant_address', address)
-  .order('created_at', { ascending: false });
-```
-
-- [ ] **Step 4: Update [linkId]/page.tsx fetch to use new column names**
-
-Ensure the server-side fetch from Supabase uses `merchant_address`, `destination_chain`, `destination_token_symbol`.
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 1: Remove Supabase packages**
 
 ```bash
-git add src/lib/payment.ts src/app/dashboard/page.tsx src/app/dashboard/history/page.tsx src/app/[linkId]/page.tsx
-git commit -m "fix: align frontend queries with consolidated schema"
+pnpm remove @supabase/supabase-js
+rm src/lib/supabase.ts
+rm -rf supabase/
+rm src/app/api/v1/links/route.ts
+rm src/hooks/usePaymentState.ts
+```
+
+- [ ] **Step 2: Remove any remaining Supabase imports**
+
+```bash
+grep -r "supabase" src/ --include="*.ts" --include="*.tsx" -l
+```
+
+Fix any remaining imports found.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add -A
+git commit -m "chore: remove Supabase dependencies and legacy code"
 ```
 
 ---
 
-### Task 8: Fix LI.FI Router Type Issue
+### Task 11: Fix LI.FI Router Type Issue
 
 **Files:**
 - Modify: `src/lib/web3/router/lifi.ts`
 
-The `LifiQuoteParams` interface is missing `fromChain` but the implementation uses it.
-
-- [ ] **Step 1: Add fromChain to the interface**
+- [ ] **Step 1: Add missing fromChain to interface**
 
 ```typescript
 export interface LifiQuoteParams {
-  fromChain: string;       // chain key for payer
-  fromToken: string;       // token address payer sends
-  toChain: string;         // destination chain key
-  toToken: string;         // destination token address
-  destinationAmountBase: string; // exact amount needed (in base units)
-  fromAddress: string;     // payer wallet address
-  toAddress: string;       // merchant wallet address
+  fromChain: string;
+  fromToken: string;
+  toChain: string;
+  toToken: string;
+  destinationAmountBase: string;
+  fromAddress: string;
+  toAddress: string;
 }
 ```
 
@@ -406,49 +764,30 @@ export interface LifiQuoteParams {
 
 ```bash
 git add src/lib/web3/router/lifi.ts
-git commit -m "fix: add missing fromChain to LifiQuoteParams interface"
+git commit -m "fix: add missing fromChain to LifiQuoteParams"
 ```
 
 ---
 
-### Task 9: Remove Unused Code
+### Task 12: Verify End-to-End Build
 
-**Files:**
-- Delete: `src/hooks/usePaymentState.ts`
-
-- [ ] **Step 1: Verify no imports exist**
-
-Run: `grep -r "usePaymentState" src/`
-Expected: No results (confirming it's unused)
-
-- [ ] **Step 2: Remove the file**
+- [ ] **Step 1: Run Convex dev to verify schema + functions deploy**
 
 ```bash
-rm src/hooks/usePaymentState.ts
+pnpm exec convex dev
 ```
 
-- [ ] **Step 3: Commit**
+Expected: All functions deploy without errors.
+
+- [ ] **Step 2: Run Next.js build**
 
 ```bash
-git add -A
-git commit -m "chore: remove unused usePaymentState hook"
+pnpm build
 ```
 
----
+Expected: Build succeeds with no TypeScript errors.
 
-### Task 10: Verify End-to-End Build
-
-- [ ] **Step 1: Run full build**
-
-Run: `pnpm build`
-Expected: Build succeeds with no TypeScript errors
-
-- [ ] **Step 2: Run lint**
-
-Run: `pnpm lint`
-Expected: No critical errors
-
-- [ ] **Step 3: Final commit and push**
+- [ ] **Step 3: Push all changes**
 
 ```bash
 git push origin main
@@ -456,12 +795,28 @@ git push origin main
 
 ---
 
-## Post-Phase 1 Notes
+## Convex Functions Summary
 
-After this phase completes, the app should:
-- Build without TypeScript errors
-- Have consistent schema between migrations, edge functions, and frontend queries
-- Support creating links and viewing them in the dashboard
-- Route payments through LI.FI or direct transfer on testnets
+After this phase, the Convex backend has:
 
-The **next phase** (Phase 2) introduces smart contract escrow, which will replace the "trust the payer sent to the right address" model with on-chain verification and fee collection. See `docs/superpowers/specs/2026-06-18-justpay-v2-design.md` for the full roadmap.
+| Function | Type | Purpose |
+|----------|------|---------|
+| `links.createLink` | Mutation | Create a new payment link |
+| `links.getLinkByShortCode` | Query | Fetch link for checkout page |
+| `links.getLinksByMerchant` | Query | Dashboard link list (reactive) |
+| `transactions.recordTransaction` | Mutation | Record payment intent |
+| `transactions.confirmTransaction` | Mutation | Mark tx as confirmed (called by webhooks) |
+| `transactions.getTransactionsByLink` | Query | Get txs for a specific link |
+| `transactions.getTransactionsByMerchant` | Query | Dashboard tx history (reactive) |
+| `webhooks.handleAlchemyWebhook` | HTTP Action | Receive EVM payment events |
+| `webhooks.handleHeliusWebhook` | HTTP Action | Receive Solana payment events |
+| `crons.expireLinks` | Cron (1min) | Auto-expire old links |
+
+## What's Different from Supabase Approach
+
+1. **No SQL migrations** — schema is TypeScript, validated at deploy time
+2. **No Edge Functions** — replaced by Convex mutations/actions
+3. **No Realtime setup** — every `useQuery` auto-updates when data changes
+4. **No schema drift** — TypeScript compiler catches mismatches
+5. **No separate hosting** — Convex is fully managed
+6. **Dashboard is reactive by default** — when a webhook confirms a payment, ALL connected merchant dashboards update instantly without any extra code
