@@ -148,16 +148,10 @@ export const Navbar = () => {
                       Solana
                     </Link>
                     <Link href="/#supported-chains" onClick={(e) => handleScroll(e, 'supported-chains')} className="text-[16px] font-bold text-white/70 hover:text-[var(--color-section-cyan)] transition-colors">
-                      Ethereum
-                    </Link>
-                    <Link href="/#supported-chains" onClick={(e) => handleScroll(e, 'supported-chains')} className="text-[16px] font-bold text-white/70 hover:text-[var(--color-section-cyan)] transition-colors">
                       Base
                     </Link>
                     <Link href="/#supported-chains" onClick={(e) => handleScroll(e, 'supported-chains')} className="text-[16px] font-bold text-white/70 hover:text-[var(--color-section-cyan)] transition-colors">
-                      Optimism
-                    </Link>
-                    <Link href="/#supported-chains" onClick={(e) => handleScroll(e, 'supported-chains')} className="text-[16px] font-bold text-white/70 hover:text-[var(--color-section-cyan)] transition-colors">
-                      Arbitrum
+                      Sui
                     </Link>
                   </div>
                 </motion.div>

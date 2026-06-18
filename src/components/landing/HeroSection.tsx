@@ -192,10 +192,10 @@ export function HeroSection() {
       {/* Brutalist Marquee Banner at bottom */}
       <div className="w-full bg-[var(--color-dark)] text-white border-t-2 border-[var(--color-border-default)] py-3 overflow-hidden whitespace-nowrap flex relative z-10">
         <div className="animate-hero-marquee inline-block font-bold text-[20px] uppercase tracking-widest px-4">
-          SOLANA • ETHEREUM • BASE • POLYGON • ARBITRUM • OPTIMISM • BSC • AVALANCHE • SUI • APTOS •
+          SOLANA • BASE • SUI • SOLANA • BASE • SUI • SOLANA • BASE • SUI • SOLANA • BASE • SUI • SOLANA • BASE • SUI • 
         </div>
         <div className="animate-hero-marquee inline-block font-bold text-[20px] uppercase tracking-widest px-4">
-          SOLANA • ETHEREUM • BASE • POLYGON • ARBITRUM • OPTIMISM • BSC • AVALANCHE • SUI • APTOS •
+          SOLANA • BASE • SUI • SOLANA • BASE • SUI • SOLANA • BASE • SUI • SOLANA • BASE • SUI • SOLANA • BASE • SUI • 
         </div>
       </div>
       <style>{`
