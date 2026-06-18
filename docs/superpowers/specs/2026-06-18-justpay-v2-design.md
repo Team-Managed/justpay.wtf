@@ -6,14 +6,13 @@ A zero-auth crypto payment gateway where anyone can create payment links (tempor
 
 ## Design Decisions
 
-| Decision         | Choice                                        | Rationale                                                                                                                                                              |
-| ---------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Decentralization | Hybrid (on-chain escrow + off-chain indexing) | Convex stores link metadata for fast lookups and real-time dashboard. Smart contract escrow handles payment verification trustlessly on-chain.                         |
-| Payment Model    | Flash escrow contract                         | Funds flow through in a single atomic tx: receive → verify amount → transfer to merchant. If anything fails, tx reverts and payer keeps funds. No holding period.      |
-| Target Chains    | Base + Solana + Sui (first-class)             | Native escrow contracts on all three. Other EVM chains route through LI.FI bridge to Base escrow.                                                                      |
-| Revenue          | Free for now (fee mechanism built-in)         | 0% fee in v1 to attract users. Contract has a configurable fee rate (owner can enable later without redeploying). Target: 0.3-0.5% when volume justifies it.           |
-| Link Types       | Both (one-time invoices + permanent tip jars) | One-time links expire after payment. Permanent links accept unlimited payments at any amount.                                                                          |
-| Backend/DB       | Convex                                        | Automatic real-time reactivity (no subscription setup), TypeScript-native schema (prevents drift), built-in functions replace edge functions, crons for expiry checks. |
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Decentralization | Hybrid (on-chain escrow + off-chain indexing) | Supabase stores link metadata for fast lookups and dashboard. Smart contract escrow handles payment custody, verification, and fee collection trustlessly. |
+| Payment Model | Escrow contract | Direct transfers are hard to verify, can't handle refunds, and don't guarantee exact amounts after bridging. Escrow receives funds, verifies amount, takes protocol fee, releases to merchant. |
+| Target Chains | Base + Solana + Sui (first-class) | Native escrow contracts on all three. Other EVM chains route through LI.FI bridge to Base escrow. |
+| Revenue | Fee + Premium | 0.5% fee on free-tier payments (taken by contract). Premium tier (API key) reduces to 0.1% or flat monthly. |
+| Link Types | Both (one-time invoices + permanent tip jars) | One-time links expire after payment. Permanent links accept unlimited payments at any amount. |
 
 ## Architecture Overview
 
@@ -42,7 +41,7 @@ A zero-auth crypto payment gateway where anyone can create payment links (tempor
                 │
                 ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                  INDEXING LAYER (Convex)                       │
+│                  INDEXING LAYER                                │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
 │  │ Alchemy      │  │ Helius       │  │ Sui Event         │  │
 │  │ Webhook(EVM) │  │ Webhook(Sol) │  │ Subscription      │  │
@@ -50,13 +49,13 @@ A zero-auth crypto payment gateway where anyone can create payment links (tempor
 │         └──────────┬───────┘───────────────────┘             │
 │                    ▼                                          │
 │         ┌──────────────────┐                                 │
-│         │ Convex HTTP Action│                                │
-│         │ (Event Processor) │                                │
+│         │ Supabase Edge Fn │                                 │
+│         │ (Event Processor)│                                 │
 │         └────────┬─────────┘                                 │
 │                  ▼                                            │
 │         ┌──────────────────┐                                 │
-│         │   Convex DB      │  ← Auto-pushes to all           │
-│         │  (Reactive Store)│    subscribed dashboard UIs      │
+│         │   Supabase DB    │                                 │
+│         │  (Index/Cache)   │                                 │
 │         └──────────────────┘                                 │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -83,12 +82,9 @@ JustPayEscrow.sol
 ```
 
 Key design:
-
-- **Flash escrow** — funds flow through in a single atomic tx (pay → verify amount → transfer to merchant). No holding period. If anything fails, entire tx reverts and payer keeps funds.
-- Fee rate is configurable (starts at 0%, can be enabled later via `setFeeRate`).
-- For bridge payments via LI.FI: payer sends to escrow contract as the destination. Contract verifies receipt, forwards to merchant.
+- No actual escrow hold for simple payments — funds flow through in a single tx (pay → fee deduction → merchant transfer). This is "flash escrow" — verification and transfer in one atomic operation.
+- For bridge payments via LI.FI: payer sends to escrow contract as the destination. Contract verifies receipt, takes fee, forwards to merchant.
 - `linkId` is a bytes32 hash derived from the short_code, keeping link identity on-chain without storing full metadata.
-- Contract does NOT store link metadata — only the intent (merchant, token, amount, expiry). All other metadata lives in Convex.
 
 ### Solana Program (Anchor)
 
@@ -117,188 +113,146 @@ justpay/
 ## Payment Flow (v2)
 
 ### Link Creation
-
 1. User enters destination address + chain + token + amount (optional for tip jars)
-2. Frontend calls Convex mutation `createLink` → inserts link metadata in reactive DB
+2. Frontend calls Supabase edge function → inserts link metadata in DB
 3. Returns short_code URL (e.g., justpay.wtf/abc123)
 4. No on-chain tx at creation time (gas-free for merchant)
 
 ### Payment Execution
-
-1. Payer opens link → frontend calls Convex query `getLinkByCode` (reactive, cached)
+1. Payer opens link → frontend fetches link details from Supabase
 2. Payer connects wallet, selects source chain
 3. Frontend determines routing:
    - **Same chain, same token**: Direct contract call to `pay(linkId)`
    - **Same chain, different token**: LI.FI swap → send result to escrow
    - **Cross-chain**: LI.FI bridge with escrow contract as destination
 4. Payer signs and sends transaction
-5. Frontend calls Convex mutation `recordTransaction` (optimistic intent)
+5. Frontend records tx intent in Supabase (optimistic)
 
 ### Verification
-
-1. Webhook (Alchemy/Helius/Sui subscription) hits Convex HTTP action
-2. HTTP action calls internal mutation:
-   - Matches to payment_link by linkId hash
+1. Webhook (Alchemy/Helius/Sui subscription) detects contract event
+2. Edge function processes event:
+   - Matches to payment_link by linkId
    - Updates transaction status to confirmed
    - Updates link status (completed for one-time, stays active for permanent)
-3. **Dashboard auto-updates instantly** — all clients subscribed to the merchant's data get pushed the new state automatically (Convex reactivity)
-4. Convex action sends email notification if configured
+   - Sends email notification if configured
+3. Dashboard reflects payment in real-time via Supabase Realtime
 
 ## Link Types
 
-| Type      | Amount               | Expiry       | Multi-use                 | Use Case                         |
-| --------- | -------------------- | ------------ | ------------------------- | -------------------------------- |
-| Invoice   | Fixed                | Yes (15m-7d) | No                        | One-time payment collection      |
-| Tip Jar   | Open (payer decides) | Never        | Yes                       | Donations, tips, creator economy |
-| Recurring | Fixed                | Never        | Yes (tracks each payment) | Subscriptions, rent              |
+| Type | Amount | Expiry | Multi-use | Use Case |
+|------|--------|--------|-----------|----------|
+| Invoice | Fixed | Yes (15m-7d) | No | One-time payment collection |
+| Tip Jar | Open (payer decides) | Never | Yes | Donations, tips, creator economy |
+| Recurring | Fixed | Never | Yes (tracks each payment) | Subscriptions, rent |
 
-## Convex Schema (v2)
+## Database Schema (v2)
 
-```typescript
-// convex/schema.ts
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
+```sql
+-- payment_links (enhanced)
+payment_links (
+  id UUID PK,
+  short_code VARCHAR(8) UNIQUE,
+  link_type ENUM('invoice', 'tip_jar', 'recurring'),
+  
+  -- Destination
+  merchant_address VARCHAR(128) NOT NULL,
+  destination_chain ENUM('base', 'solana', 'sui'),
+  destination_token_address VARCHAR(128),
+  destination_token_symbol VARCHAR(10),
+  
+  -- Amount (null for tip_jar)
+  amount DECIMAL(28,18),
+  
+  -- Metadata
+  label VARCHAR(255),
+  memo TEXT,
+  merchant_email VARCHAR(255),
+  
+  -- Lifecycle
+  status ENUM('active', 'completed', 'expired', 'cancelled'),
+  expires_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  
+  -- On-chain reference
+  link_id_hash BYTEA -- bytes32 for contract matching
+)
 
-export default defineSchema({
-  paymentLinks: defineTable({
-    shortCode: v.string(),
-    linkType: v.union(
-      v.literal("invoice"),
-      v.literal("tip_jar"),
-      v.literal("recurring"),
-    ),
-
-    // Destination
-    merchantAddress: v.string(),
-    destinationChain: v.union(
-      v.literal("base"),
-      v.literal("solana"),
-      v.literal("sui"),
-    ),
-    destinationTokenAddress: v.optional(v.string()),
-    destinationTokenSymbol: v.string(),
-
-    // Amount (undefined for tip_jar)
-    amount: v.optional(v.string()), // stored as string to avoid float precision issues
-
-    // Metadata
-    label: v.optional(v.string()),
-    memo: v.optional(v.string()),
-    merchantEmail: v.optional(v.string()),
-
-    // Lifecycle
-    status: v.union(
-      v.literal("active"),
-      v.literal("completed"),
-      v.literal("expired"),
-      v.literal("cancelled"),
-    ),
-    expiresAt: v.optional(v.number()), // Unix timestamp ms
-
-    // On-chain reference
-    linkIdHash: v.string(), // bytes32 hex for contract matching
-  })
-    .index("by_shortCode", ["shortCode"])
-    .index("by_merchant", ["merchantAddress"])
-    .index("by_status", ["status"]),
-
-  transactions: defineTable({
-    linkId: v.id("paymentLinks"),
-
-    // Source (payer)
-    payerAddress: v.string(),
-    sourceChain: v.string(),
-    sourceToken: v.optional(v.string()),
-    sourceTxHash: v.string(),
-    sourceAmount: v.string(),
-
-    // Destination (result)
-    destinationTxHash: v.optional(v.string()),
-    destinationAmount: v.optional(v.string()),
-
-    // LI.FI routing (if cross-chain)
-    lifiRouteId: v.optional(v.string()),
-    bridgeUsed: v.optional(v.string()),
-
-    // Fees
-    protocolFee: v.optional(v.string()),
-
-    // Status
-    status: v.union(
-      v.literal("pending"),
-      v.literal("bridging"),
-      v.literal("confirmed"),
-      v.literal("failed"),
-      v.literal("refunded"),
-    ),
-    confirmedAt: v.optional(v.number()),
-  })
-    .index("by_link", ["linkId"])
-    .index("by_merchant_link", ["linkId", "status"])
-    .index("by_sourceTxHash", ["sourceTxHash"]),
-});
+-- transactions (enhanced)
+transactions (
+  id UUID PK,
+  link_id UUID FK → payment_links,
+  
+  -- Source (payer)
+  payer_address VARCHAR(128),
+  source_chain VARCHAR(20),
+  source_token VARCHAR(128),
+  source_tx_hash VARCHAR(128),
+  source_amount DECIMAL(28,18),
+  
+  -- Destination (result)
+  destination_tx_hash VARCHAR(128),
+  destination_amount DECIMAL(28,18),
+  
+  -- LI.FI routing (if cross-chain)
+  lifi_route_id VARCHAR(128),
+  bridge_used VARCHAR(50),
+  
+  -- Fees
+  protocol_fee DECIMAL(28,18),
+  gas_cost_usd DECIMAL(10,4),
+  
+  -- Status
+  status ENUM('pending', 'bridging', 'confirmed', 'failed', 'refunded'),
+  confirmed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+)
 ```
-
-### Why This Schema Works
-
-- **Type-safe end-to-end** — TypeScript catches schema mismatches at build time, not runtime
-- **No migrations** — schema changes are validated on deploy, Convex handles data evolution
-- **Indexed queries** — `by_shortCode` for checkout lookups, `by_merchant` for dashboard, `by_sourceTxHash` for webhook matching
-- **Amounts as strings** — avoids floating point precision issues with crypto decimals
 
 ## Tech Stack
 
-| Layer               | Technology                                                               |
-| ------------------- | ------------------------------------------------------------------------ |
-| Frontend            | Next.js 16 (App Router), React 19, TailwindCSS 4                         |
-| EVM Wallet          | wagmi v3, viem                                                           |
-| Solana Wallet       | @solana/wallet-adapter-react                                             |
-| Sui Wallet          | @mysten/dapp-kit                                                         |
-| Cross-chain Routing | LI.FI SDK v4                                                             |
-| EVM Contract        | Solidity, Foundry                                                        |
-| Solana Program      | Anchor (Rust)                                                            |
-| Sui Module          | Move                                                                     |
-| Backend/DB          | Convex (reactive DB + mutations + actions + crons)                       |
-| Indexing            | Alchemy Webhooks (EVM), Helius Webhooks (Solana), Sui Event Subscription |
-| Hosting             | Vercel (frontend), Convex (backend — fully managed)                      |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 16 (App Router), React 19, TailwindCSS 4 |
+| EVM Wallet | wagmi v3, viem |
+| Solana Wallet | @solana/wallet-adapter-react |
+| Sui Wallet | @mysten/dapp-kit |
+| Cross-chain Routing | LI.FI SDK v4 |
+| EVM Contract | Solidity, Hardhat/Foundry |
+| Solana Program | Anchor (Rust) |
+| Sui Module | Move |
+| Database | Supabase (Postgres + Realtime + Edge Functions) |
+| Indexing | Alchemy Webhooks (EVM), Helius Webhooks (Solana), Sui Event Subscription |
+| Hosting | Vercel (frontend), Supabase (backend) |
 
 ## Phased Rollout
 
-### Phase 1: Migrate to Convex + Fix Prototype (1-2 weeks)
-
-- Set up Convex project with schema, mutations, queries, and HTTP actions
-- Migrate frontend from Supabase client calls to Convex hooks (`useQuery`, `useMutation`)
-- Replace Supabase Edge Functions with Convex actions/HTTP actions
+### Phase 1: Fix Current Prototype (1-2 weeks)
+- Fix schema drift between migrations and edge functions
 - Fix TypeScript errors (CheckoutClient.tsx chain type)
-- Remove all Supabase dependencies and SQL migrations
+- Align record-transaction with latest schema
 - Get end-to-end flow working on testnets (Base Sepolia + Solana Devnet + Sui Testnet)
 
 ### Phase 2: Smart Contract Escrow (2-3 weeks)
-
-- Write and deploy EVM flash escrow on Base Sepolia (Foundry)
-- Write and deploy Solana program on devnet (Anchor)
-- Write and deploy Sui module on testnet (Move)
+- Write and deploy EVM escrow on Base Sepolia
+- Write and deploy Solana program on devnet
+- Write and deploy Sui module on testnet
 - Update frontend to route payments through contracts
-- Set up webhooks → Convex HTTP actions for event indexing
+- Update webhooks to listen for contract events
 
 ### Phase 3: Cross-Chain via LI.FI + Escrow (1-2 weeks)
-
 - Configure LI.FI to route bridge outputs to escrow contract address
-- Handle bridge completion verification via Convex cron polling LI.FI status API
+- Handle bridge completion verification
 - Add slippage protection and minimum amount checks
 
 ### Phase 4: Production Polish (1-2 weeks)
-
 - Deploy contracts to mainnets
 - Add permanent link types (tip jar, recurring)
-- Email notifications via Convex actions (Resend/SendGrid)
-- Dashboard with real-time updates (automatic via Convex reactivity)
-- Enable fee mechanism when ready (contract owner call)
+- Premium tier / API key system
+- Email notifications
+- Dashboard with real-time updates via Supabase Realtime
 
 ### Phase 5: Scale (ongoing)
-
 - Add more chains (Arbitrum, Polygon, Optimism via EVM escrow)
 - Fiat on/off ramp integration
 - Widget/embed SDK for merchants
 - Mobile-optimized checkout
-- Premium tier / API key system with higher rate limits

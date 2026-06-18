@@ -1,29 +1,16 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+
 import "./globals.css";
-import { ConvexClientProvider } from "@/providers/ConvexClientProvider";
 import { Web3Provider } from "@/providers/Web3Provider";
 import { Navbar } from "@/components/Navbar";
-import { NeonBackground } from "@/components/NeonBackground";
+// NeonBackground removed for Brutalism theme
 import { Footer } from "@/components/shared/Footer";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains",
-  subsets: ["latin"],
-  display: "swap",
-});
+import "@fontsource/darker-grotesque/400.css";
+import "@fontsource/darker-grotesque/600.css";
+import "@fontsource/darker-grotesque/700.css";
+import "@fontsource/darker-grotesque/800.css";
+import "@fontsource/darker-grotesque/900.css";
 
 export const metadata: Metadata = {
   title: "justpay.wtf — Frictionless Crypto Payments",
@@ -36,18 +23,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jakarta.variable} ${jetbrainsMono.variable} h-full antialiased dark`}>
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col relative">
-        <ConvexClientProvider>
-          <Web3Provider>
-            <NeonBackground />
-            <Navbar />
-            <div className="relative z-10 flex flex-col flex-1">
-              {children}
-            </div>
-            <Footer />
-          </Web3Provider>
-        </ConvexClientProvider>
+        <Web3Provider>
+          <Navbar />
+          <div className="relative z-10 flex flex-col flex-1">
+            {children}
+          </div>
+          <Footer />
+        </Web3Provider>
       </body>
     </html>
   );
