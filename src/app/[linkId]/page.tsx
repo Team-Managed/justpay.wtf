@@ -48,7 +48,7 @@ export default function PaymentPage() {
 
       <div className="w-full max-w-md z-10 flex flex-col gap-6">
         <PaymentCard 
-          amount={link.amount ?? "0"}
+          amount={Number(link.amount) || 0}
           tokenSymbol={link.destinationTokenSymbol}
           recipientAddress={link.merchantAddress}
           memo={link.label}
