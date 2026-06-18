@@ -55,9 +55,8 @@ export default function LinksManagement() {
                     <td className="py-4 px-4 font-medium text-white">{link.label || 'Payment'}</td>
                     <td className="py-4 px-4 font-mono text-zinc-300">${link.amount} {link.destinationTokenSymbol}</td>
                     <td className="py-4 px-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        link.status === 'active' ? 'bg-success/10 text-success' : 'bg-zinc-800 text-zinc-400'
-                      }`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${link.status === 'active' ? 'bg-success/10 text-success' : 'bg-zinc-800 text-zinc-400'
+                        }`}>
                         {link.status}
                       </span>
                     </td>

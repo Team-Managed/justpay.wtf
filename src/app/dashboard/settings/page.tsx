@@ -15,11 +15,11 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!address) return;
-    
+
     // Load local settings
     const savedExpiry = localStorage.getItem(`justpay_expiry_${address}`)
     if (savedExpiry) setDefaultExpiry(savedExpiry)
-    
+
     const savedNotifs = localStorage.getItem(`justpay_notifs_${address}`)
     if (savedNotifs !== null) setNotifications(savedNotifs === 'true')
   }, [address])
@@ -61,7 +61,7 @@ export default function SettingsPage() {
               <h2 className="text-lg font-bold text-foreground border-b border-border pb-2">Link Defaults</h2>
               <div className="flex flex-col gap-2">
                 <label className="form-label">Default Expiry</label>
-                <select 
+                <select
                   value={defaultExpiry}
                   onChange={(e) => setDefaultExpiry(e.target.value)}
                   className="select-field max-w-[200px]"
@@ -79,8 +79,8 @@ export default function SettingsPage() {
             <div className="flex flex-col gap-4">
               <h2 className="text-lg font-bold text-foreground border-b border-border pb-2">Notifications</h2>
               <label className="flex items-center gap-3 cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={notifications}
                   onChange={(e) => setNotifications(e.target.checked)}
                   className="w-4 h-4 rounded border-border bg-black/50 checked:bg-primary"
@@ -90,7 +90,7 @@ export default function SettingsPage() {
             </div>
 
             <div className="pt-4 border-t border-border">
-              <button 
+              <button
                 onClick={handleSave}
                 disabled={isSaving}
                 className="btn-primary"

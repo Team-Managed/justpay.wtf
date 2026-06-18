@@ -19,5 +19,9 @@ export const expireLinks = internalMutation({
 });
 
 const crons = cronJobs();
-crons.interval("expire stale links", { minutes: 1 }, internal.crons.expireLinks);
+crons.interval(
+  "expire stale links",
+  { minutes: 1 },
+  internal.crons.expireLinks,
+);
 export default crons;

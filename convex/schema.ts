@@ -4,7 +4,11 @@ import { v } from "convex/values";
 export default defineSchema({
   paymentLinks: defineTable({
     shortCode: v.string(),
-    linkType: v.union(v.literal("invoice"), v.literal("tip_jar"), v.literal("recurring")),
+    linkType: v.union(
+      v.literal("invoice"),
+      v.literal("tip_jar"),
+      v.literal("recurring"),
+    ),
     merchantAddress: v.string(),
     destinationChain: v.string(),
     destinationTokenAddress: v.optional(v.string()),
@@ -13,7 +17,12 @@ export default defineSchema({
     label: v.optional(v.string()),
     memo: v.optional(v.string()),
     merchantEmail: v.optional(v.string()),
-    status: v.union(v.literal("active"), v.literal("completed"), v.literal("expired"), v.literal("cancelled")),
+    status: v.union(
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("expired"),
+      v.literal("cancelled"),
+    ),
     expiresAt: v.optional(v.number()),
     linkIdHash: v.string(),
   })
@@ -33,7 +42,13 @@ export default defineSchema({
     lifiRouteId: v.optional(v.string()),
     bridgeUsed: v.optional(v.string()),
     protocolFee: v.optional(v.string()),
-    status: v.union(v.literal("pending"), v.literal("bridging"), v.literal("confirmed"), v.literal("failed"), v.literal("refunded")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("bridging"),
+      v.literal("confirmed"),
+      v.literal("failed"),
+      v.literal("refunded"),
+    ),
     confirmedAt: v.optional(v.number()),
   })
     .index("by_link", ["linkId"])

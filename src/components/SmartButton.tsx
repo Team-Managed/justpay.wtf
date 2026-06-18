@@ -26,24 +26,24 @@ interface SmartButtonProps {
   onError?: (error: any) => void
 }
 
-export function SmartButton({ 
-  linkId, 
-  chain, 
-  recipientAddress, 
-  tokenAddress, 
+export function SmartButton({
+  linkId,
+  chain,
+  recipientAddress,
+  tokenAddress,
   payerChain,
   inputTokenAddress,
-  amount, 
+  amount,
   decimals = 18,
   onSuccess,
   onError
 }: SmartButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const recordTx = useMutation(api.transactions.recordTransaction)
-  
+
   const { address: evmAddress } = useAccount()
   const { sendTransactionAsync } = useSendTransaction()
-  
+
   const wallet = useWallet()
   const { connection } = useConnection()
 
@@ -73,13 +73,13 @@ export function SmartButton({
       }
 
       const isBridge = payerChain !== chain
-      
+
       const amountBase = BigInt(Math.floor(parseFloat(amount) * Math.pow(10, decimals))).toString()
 
       // 1. Get Quote or Fallback
       let txHash: string;
       let finalFromAmount = amountBase;
-      
+
       try {
         const { quote, fromAmount } = await fetchLifiQuote({
           fromChain: getLifiChainId(payerChain),
@@ -128,7 +128,7 @@ export function SmartButton({
             recipientAddress,
             amountBase
           });
-          
+
           if (isEvm) {
             txHash = await sendTransactionAsync(directTx as any);
           } else if (isSolana) {
@@ -163,7 +163,7 @@ export function SmartButton({
       }
 
       onSuccess(txHash, isBridge)
-      
+
     } catch (error) {
       console.error(error)
       if (onError) {

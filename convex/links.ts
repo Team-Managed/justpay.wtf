@@ -15,7 +15,7 @@ function computeLinkIdHash(shortCode: string): string {
   let hash = 0;
   for (let i = 0; i < shortCode.length; i++) {
     const char = shortCode.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32bit integer
   }
   return "0x" + Math.abs(hash).toString(16).padStart(64, "0");
@@ -32,7 +32,13 @@ export const createLink = mutation({
     memo: v.optional(v.string()),
     merchantEmail: v.optional(v.string()),
     expiresAt: v.optional(v.number()),
-    linkType: v.optional(v.union(v.literal("invoice"), v.literal("tip_jar"), v.literal("recurring"))),
+    linkType: v.optional(
+      v.union(
+        v.literal("invoice"),
+        v.literal("tip_jar"),
+        v.literal("recurring"),
+      ),
+    ),
   },
   handler: async (ctx, args) => {
     const shortCode = generateShortCode();
@@ -73,7 +79,9 @@ export const getLinksByMerchant = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("paymentLinks")
-      .withIndex("by_merchant", (q) => q.eq("merchantAddress", args.merchantAddress))
+      .withIndex("by_merchant", (q) =>
+        q.eq("merchantAddress", args.merchantAddress),
+      )
       .order("desc")
       .collect();
   },

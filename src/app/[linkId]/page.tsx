@@ -47,7 +47,7 @@ export default function PaymentPage() {
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary/20 blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-md z-10 flex flex-col gap-6">
-        <PaymentCard 
+        <PaymentCard
           amount={Number(link.amount) || 0}
           tokenSymbol={link.destinationTokenSymbol}
           recipientAddress={link.merchantAddress}
@@ -66,7 +66,7 @@ export default function PaymentPage() {
               </p>
             </div>
           ) : (
-            <CheckoutClient 
+            <CheckoutClient
               linkId={link._id}
               chain={link.destinationChain}
               recipientAddress={link.merchantAddress}

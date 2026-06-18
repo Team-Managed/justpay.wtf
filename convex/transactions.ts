@@ -34,7 +34,9 @@ export const confirmTransaction = mutation({
   handler: async (ctx, args) => {
     const tx = await ctx.db
       .query("transactions")
-      .withIndex("by_sourceTxHash", (q) => q.eq("sourceTxHash", args.sourceTxHash))
+      .withIndex("by_sourceTxHash", (q) =>
+        q.eq("sourceTxHash", args.sourceTxHash),
+      )
       .unique();
 
     if (!tx) throw new Error("Transaction not found");
@@ -69,7 +71,9 @@ export const getTransactionsByMerchant = query({
   handler: async (ctx, args) => {
     const links = await ctx.db
       .query("paymentLinks")
-      .withIndex("by_merchant", (q) => q.eq("merchantAddress", args.merchantAddress))
+      .withIndex("by_merchant", (q) =>
+        q.eq("merchantAddress", args.merchantAddress),
+      )
       .collect();
 
     const allTxs = [];

@@ -41,7 +41,7 @@ export function CreateLinkForm() {
   const handleCreate = async () => {
     if (!address || !amount) return;
     setIsLoading(true);
-    
+
     try {
       let expiresAt: number | undefined;
       const now = Date.now();
@@ -63,7 +63,7 @@ export function CreateLinkForm() {
         expiresAt,
         linkType: 'invoice',
       });
-      
+
       // Save to localStorage LRU
       const existingStr = localStorage.getItem('justpay_links');
       let links = existingStr ? JSON.parse(existingStr) : [];
@@ -91,7 +91,7 @@ export function CreateLinkForm() {
 
       <FeeDisclosureBanner chain={chain} />
 
-      <ChainTokenSelector 
+      <ChainTokenSelector
         selectedChain={chain}
         selectedToken={tokenSymbol}
         onChainSelect={setChain as any}
@@ -100,11 +100,11 @@ export function CreateLinkForm() {
 
       <div className="flex flex-col gap-2">
         <label className="form-label">Destination</label>
-        <input 
-          type="text" 
+        <input
+          type="text"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          placeholder={chain === 'base' ? "0x..." : chain === 'sui' ? "0x... (64 hex chars)" : "Solana address"} 
+          placeholder={chain === 'base' ? "0x..." : chain === 'sui' ? "0x... (64 hex chars)" : "Solana address"}
           className="input-field"
         />
       </div>
@@ -112,11 +112,11 @@ export function CreateLinkForm() {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2 flex-1">
           <label className="form-label">Amount</label>
-          <input 
-            type="number" 
+          <input
+            type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00" 
+            placeholder="0.00"
             className="input-field"
           />
         </div>
@@ -124,11 +124,11 @@ export function CreateLinkForm() {
 
       <div className="flex flex-col gap-2">
         <label className="form-label">Memo (Optional)</label>
-        <input 
-          type="text" 
+        <input
+          type="text"
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
-          placeholder="Invoice #123, Coffee, etc." 
+          placeholder="Invoice #123, Coffee, etc."
           className="input-field"
         />
       </div>
@@ -136,17 +136,17 @@ export function CreateLinkForm() {
       <div className="flex gap-4">
         <div className="flex flex-col gap-2 flex-1">
           <label className="form-label">Email (Optional)</label>
-          <input 
-            type="email" 
+          <input
+            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="For payment notifications" 
+            placeholder="For payment notifications"
             className="input-field"
           />
         </div>
         <div className="flex flex-col gap-2 w-32">
           <label className="form-label">Expiry</label>
-          <select 
+          <select
             value={expiry}
             onChange={(e) => setExpiry(e.target.value)}
             className="select-field"
@@ -160,7 +160,7 @@ export function CreateLinkForm() {
         </div>
       </div>
 
-      <button 
+      <button
         onClick={handleCreate}
         disabled={isLoading || !address || !amount}
         className="btn-primary mt-2"

@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "allowJs": true,
-    "strict": true
-  },
-  "include": ["./**/*"],
-  "exclude": ["./_generated"]
-}
