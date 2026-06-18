@@ -1,44 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from "@/lib/supabase";
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useAccount } from 'wagmi';
 import { Copy, ExternalLink, PowerOff } from 'lucide-react';
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 
 export default function LinksManagement() {
-  const [links, setLinks] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
   const { publicKey } = useWallet();
   const { address: evmAddress } = useAccount();
   const address = publicKey?.toBase58() || evmAddress;
 
-  useEffect(() => {
-    async function fetchLinks() {
-      if (!address) {
-        setLinks([]);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('payment_links')
-          .select('*')
-          .eq('creator_address', address)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setLinks(data || []);
-      } catch (err) {
-        console.error("Failed to fetch links:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchLinks();
-  }, [address]);
+  const links = useQuery(api.links.getLinksByMerchant, address ? { merchantAddress: address } : "skip");
+  const isLoading = links === undefined;
 
   const handleCopy = (shortCode: string) => {
     const url = `${window.location.origin}/${shortCode}`;
@@ -47,19 +21,8 @@ export default function LinksManagement() {
   };
 
   const handleDeactivate = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('payment_links')
-        .update({ status: 'cancelled' })
-        .eq('id', id);
-        
-      if (error) throw error;
-      
-      setLinks(prev => prev.map(l => l.id === id ? { ...l, status: 'cancelled' } : l));
-    } catch (err) {
-      console.error(err);
-      alert('Failed to deactivate link.');
-    }
+    // TODO: Add Convex mutation for link deactivation
+    alert('Deactivation will be available soon.');
   };
 
   return (
@@ -87,10 +50,10 @@ export default function LinksManagement() {
                 </tr>
               </thead>
               <tbody>
-                {links.map((link) => (
-                  <tr key={link.id} className="border-b border-white/[0.05] hover:bg-white/[0.02] transition-colors">
+                {(links || []).map((link) => (
+                  <tr key={link._id} className="border-b border-white/[0.05] hover:bg-white/[0.02] transition-colors">
                     <td className="py-4 px-4 font-medium text-white">{link.label || 'Payment'}</td>
-                    <td className="py-4 px-4 font-mono text-zinc-300">${link.amount} {link.token_symbol}</td>
+                    <td className="py-4 px-4 font-mono text-zinc-300">${link.amount} {link.destinationTokenSymbol}</td>
                     <td className="py-4 px-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                         link.status === 'active' ? 'bg-success/10 text-success' : 'bg-zinc-800 text-zinc-400'
@@ -99,14 +62,14 @@ export default function LinksManagement() {
                       </span>
                     </td>
                     <td className="py-4 px-4 flex items-center gap-3">
-                      <button onClick={() => handleCopy(link.short_code)} className="text-zinc-400 hover:text-white" title="Copy Link">
+                      <button onClick={() => handleCopy(link.shortCode)} className="text-zinc-400 hover:text-white" title="Copy Link">
                         <Copy className="w-4 h-4" />
                       </button>
-                      <a href={`/${link.short_code}`} target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-white" title="Open Link">
+                      <a href={`/${link.shortCode}`} target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-white" title="Open Link">
                         <ExternalLink className="w-4 h-4" />
                       </a>
                       {link.status === 'active' && (
-                        <button onClick={() => handleDeactivate(link.id)} className="text-error hover:text-error/80" title="Deactivate">
+                        <button onClick={() => handleDeactivate(link._id)} className="text-error hover:text-error/80" title="Deactivate">
                           <PowerOff className="w-4 h-4" />
                         </button>
                       )}
