@@ -73,25 +73,25 @@ export default function DashboardHistory() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-extrabold text-foreground">Transaction History</h1>
-        <p className="text-sm text-zinc-400">View and export all payments received through your generated links.</p>
+      <div className="flex flex-col gap-2 border-b-4 border-black pb-4 mb-4">
+        <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-black">Transaction History</h1>
+        <p className="text-lg font-bold text-black uppercase">View and export all payments received through your generated links.</p>
       </div>
 
-      <div className="glass-card flex flex-col overflow-hidden min-h-[400px]">
+      <div className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col overflow-hidden min-h-[400px]">
         {/* Filters & Search */}
-        <div className="p-6 border-b border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="p-6 border-b-4 border-black flex flex-col sm:flex-row justify-between items-center gap-4 bg-[var(--color-section-yellow)]">
           <div className="relative w-full sm:w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-black" strokeWidth={3} />
             <input 
               type="text" 
               placeholder="Search by TxID or Link ID..." 
-              className="input-field pl-10"
+              className="w-full bg-white border-[3px] border-black px-4 py-3 pl-12 text-[16px] font-bold text-black placeholder:text-black/50 focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
             />
           </div>
           
-          <button onClick={handleExportCSV} disabled={transactions.length === 0} className="btn-secondary w-full sm:w-auto px-6 py-3 flex items-center gap-2 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-            <ArrowDownToLine className="w-4 h-4" /> Export CSV
+          <button onClick={handleExportCSV} disabled={transactions.length === 0} className="w-full sm:w-auto px-6 py-3 flex items-center gap-2 border-[3px] border-black bg-white text-black font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[var(--color-section-pink)] hover:translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            <ArrowDownToLine className="w-5 h-5" strokeWidth={3} /> Export CSV
           </button>
         </div>
 
@@ -99,37 +99,37 @@ export default function DashboardHistory() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-border bg-surface">
-                <th className="p-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Transaction ID</th>
-                <th className="p-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Link ID</th>
-                <th className="p-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Amount</th>
-                <th className="p-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Source Chain</th>
-                <th className="p-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Date</th>
-                <th className="p-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Status</th>
+              <tr className="border-b-4 border-black bg-white">
+                <th className="p-4 text-[14px] font-black text-black uppercase tracking-wider border-r-4 border-black last:border-r-0">Transaction ID</th>
+                <th className="p-4 text-[14px] font-black text-black uppercase tracking-wider border-r-4 border-black last:border-r-0">Link ID</th>
+                <th className="p-4 text-[14px] font-black text-black uppercase tracking-wider border-r-4 border-black last:border-r-0">Amount</th>
+                <th className="p-4 text-[14px] font-black text-black uppercase tracking-wider border-r-4 border-black last:border-r-0">Source Chain</th>
+                <th className="p-4 text-[14px] font-black text-black uppercase tracking-wider border-r-4 border-black last:border-r-0">Date</th>
+                <th className="p-4 text-[14px] font-black text-black uppercase tracking-wider">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y-4 divide-black bg-white">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="p-12 text-center text-zinc-500">Loading history...</td>
+                  <td colSpan={6} className="p-12 text-center text-xl font-bold text-black uppercase tracking-wider">Loading history...</td>
                 </tr>
               ) : transactions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-12 text-center text-zinc-500">No transactions found for this wallet.</td>
+                  <td colSpan={6} className="p-12 text-center text-xl font-bold text-black uppercase tracking-wider">No transactions found for this wallet.</td>
                 </tr>
               ) : (
                 transactions.map((tx) => (
-                  <tr key={tx.rawTxHash} className="hover:bg-white/5 transition-colors">
-                    <td className="p-4 text-sm font-mono text-foreground" title={tx.rawTxHash}>{tx.id}</td>
-                    <td className="p-4 text-sm font-mono text-zinc-400">{tx.linkId}</td>
-                    <td className="p-4 text-sm font-bold text-foreground">{tx.amount}</td>
-                    <td className="p-4 text-sm text-zinc-400 capitalize">{tx.fromChain}</td>
-                    <td className="p-4 text-sm text-zinc-500">{tx.date}</td>
+                  <tr key={tx.rawTxHash} className="hover:bg-[var(--color-section-cyan)] transition-colors">
+                    <td className="p-4 text-[16px] font-mono font-bold text-black border-r-4 border-black last:border-r-0" title={tx.rawTxHash}>{tx.id}</td>
+                    <td className="p-4 text-[16px] font-mono font-bold text-black border-r-4 border-black last:border-r-0">{tx.linkId}</td>
+                    <td className="p-4 text-[20px] font-black text-black border-r-4 border-black last:border-r-0">{tx.amount}</td>
+                    <td className="p-4 text-[16px] font-bold text-black uppercase border-r-4 border-black last:border-r-0">{tx.fromChain}</td>
+                    <td className="p-4 text-[16px] font-bold text-black border-r-4 border-black last:border-r-0">{tx.date}</td>
                     <td className="p-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        tx.status === 'Settled' ? 'bg-success/10 text-success border border-success/20' : 
-                        tx.status === 'Pending' ? 'bg-warning/10 text-warning border border-warning/20' : 
-                        'bg-error/10 text-error border border-error/20'
+                      <span className={`px-3 py-1 text-[12px] font-black uppercase border-2 border-black ${
+                        tx.status === 'Settled' ? 'bg-[var(--color-section-green)] text-black' : 
+                        tx.status === 'Pending' ? 'bg-[var(--color-section-yellow)] text-black' : 
+                        'bg-[var(--color-section-pink)] text-black'
                       }`}>
                         {tx.status}
                       </span>

@@ -64,50 +64,50 @@ export default function LinksManagement() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold text-foreground">Payment Links</h1>
+      <div className="flex items-center justify-between border-b-4 border-black pb-4 mb-4">
+        <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-black">Payment Links</h1>
       </div>
 
-      <div className="glass-card p-6">
+      <div className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-0">
         {isLoading ? (
-          <p className="text-zinc-400">Loading links...</p>
+          <p className="p-12 text-center text-xl font-bold text-black uppercase tracking-wider">Loading links...</p>
         ) : links.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4 border border-dashed border-white/[0.15] rounded-2xl">
-            <p className="text-zinc-400 text-sm">No payment links created yet.</p>
+          <div className="flex flex-col items-center justify-center py-12 px-4 border-4 border-dashed border-black m-6">
+            <p className="text-xl font-bold text-black uppercase tracking-wider">No payment links created yet.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/[0.08]">
-                  <th className="py-3 px-4 text-xs font-bold text-zinc-500 uppercase">Label</th>
-                  <th className="py-3 px-4 text-xs font-bold text-zinc-500 uppercase">Amount</th>
-                  <th className="py-3 px-4 text-xs font-bold text-zinc-500 uppercase">Status</th>
-                  <th className="py-3 px-4 text-xs font-bold text-zinc-500 uppercase">Actions</th>
+                <tr className="border-b-4 border-black bg-[var(--color-section-yellow)]">
+                  <th className="p-4 text-[14px] font-black text-black uppercase tracking-wider border-r-4 border-black last:border-r-0">Label</th>
+                  <th className="p-4 text-[14px] font-black text-black uppercase tracking-wider border-r-4 border-black last:border-r-0">Amount</th>
+                  <th className="p-4 text-[14px] font-black text-black uppercase tracking-wider border-r-4 border-black last:border-r-0">Status</th>
+                  <th className="p-4 text-[14px] font-black text-black uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y-4 divide-black bg-white">
                 {links.map((link) => (
-                  <tr key={link.id} className="border-b border-white/[0.05] hover:bg-white/[0.02] transition-colors">
-                    <td className="py-4 px-4 font-medium text-white">{link.label || 'Payment'}</td>
-                    <td className="py-4 px-4 font-mono text-zinc-300">${link.amount} {link.token_symbol}</td>
-                    <td className="py-4 px-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        link.status === 'active' ? 'bg-success/10 text-success' : 'bg-zinc-800 text-zinc-400'
+                  <tr key={link.id} className="hover:bg-[var(--color-section-cyan)] transition-colors">
+                    <td className="p-4 text-[16px] font-bold text-black border-r-4 border-black last:border-r-0">{link.label || 'Payment'}</td>
+                    <td className="p-4 text-[20px] font-black text-black border-r-4 border-black last:border-r-0">${link.amount} {link.token_symbol}</td>
+                    <td className="p-4 border-r-4 border-black last:border-r-0">
+                      <span className={`px-3 py-1 text-[12px] font-black uppercase border-2 border-black ${
+                        link.status === 'active' ? 'bg-[var(--color-section-green)] text-black' : 'bg-zinc-300 text-zinc-600'
                       }`}>
                         {link.status}
                       </span>
                     </td>
-                    <td className="py-4 px-4 flex items-center gap-3">
-                      <button onClick={() => handleCopy(link.short_code)} className="text-zinc-400 hover:text-white" title="Copy Link">
-                        <Copy className="w-4 h-4" />
+                    <td className="p-4 flex items-center gap-4">
+                      <button onClick={() => handleCopy(link.short_code)} className="text-black hover:text-[var(--color-section-pink)] transition-colors" title="Copy Link">
+                        <Copy className="w-6 h-6" strokeWidth={3} />
                       </button>
-                      <a href={`/${link.short_code}`} target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-white" title="Open Link">
-                        <ExternalLink className="w-4 h-4" />
+                      <a href={`/${link.short_code}`} target="_blank" rel="noreferrer" className="text-black hover:text-[var(--color-section-pink)] transition-colors" title="Open Link">
+                        <ExternalLink className="w-6 h-6" strokeWidth={3} />
                       </a>
                       {link.status === 'active' && (
-                        <button onClick={() => handleDeactivate(link.id)} className="text-error hover:text-error/80" title="Deactivate">
-                          <PowerOff className="w-4 h-4" />
+                        <button onClick={() => handleDeactivate(link.id)} className="text-black hover:text-[var(--color-section-pink)] transition-colors" title="Deactivate">
+                          <PowerOff className="w-6 h-6" strokeWidth={3} />
                         </button>
                       )}
                     </td>
