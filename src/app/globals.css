@@ -3,123 +3,180 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #030303; /* Deep Neutral Black */
-  --foreground: #FFFFFF; /* Pure White */
+  /* Neutral Backgrounds */
+  --neutral-primary-soft: #FFFFFF;
+  --neutral-primary: #FFFFFF;
+  --neutral-primary-medium: #FFFFFF;
+  --neutral-primary-strong: #FFFFFF;
+  --neutral-secondary-soft: #F5F0E6;
+  --neutral-secondary: #F5F0E6;
+  --neutral-secondary-medium: #F5F0E6;
+  --neutral-secondary-strong: #F5F0E6;
+  --neutral-tertiary-soft: #EDE6D6;
+  --neutral-tertiary: #EDE6D6;
+  --neutral-tertiary-medium: #EDE6D6;
+  --neutral-quaternary: #E0D5C0;
+  --quaternary-medium: #E0D5C0;
+  --gray: #D4C9B4;
+
+  /* Brand Backgrounds */
+  --brand-softer: #FEF5E5;
+  --brand-soft: #F8E4B8;
+  --brand: #DAA346;
+  --brand-medium: #F0D08A;
+  --brand-strong: #B8862E;
+
+  /* Section Colors */
+  --section-brand: #DAA346;
+  --section-secondary: #DD644E;
+  --section-cyan: #A6FAFF;
+  --section-purple: #A388EE;
+  --section-green: #7CDB8A;
+  --section-pink: #FF99C8;
+  --section-blue: #88AAEE;
+  --section-yellow: #FFD166;
+
+  /* Text Colors */
+  --white: #FFFFFF;
+  --black: #000000;
+  --heading: #000000;
+  --body: #1A1A1A;
+  --body-subtle: #3A3A3A;
+  --fg-brand: #DAA346;
+
+  /* Border Colors */
+  --border-default: #000000;
+  --border-buffer: #FFFFFF;
   
-  --primary: #10B981; /* Emerald 500 */
-  --primary-hover: #059669; /* Emerald 600 */
+  /* Status Colors */
+  --success: #16A34A;
+  --success-medium: #A7F3D0;
+  --danger: #DD644E;
+  --danger-medium: #FECDD3;
+  --warning: #F59E0B;
+  --warning-medium: #FDE68A;
+
+  /* Utilities */
+  --disabled: #E5E5E5;
+  --fg-disabled: #9CA3AF;
+  --dark: #000000;
+
+  /* Legacy aliases for old components to prevent breakage */
+  --background: var(--neutral-primary-soft);
+  --foreground: var(--body);
+  --primary: var(--brand);
+  --secondary: var(--section-secondary);
+  --surface: var(--neutral-primary-soft);
+}
+
+.dark {
+  /* Dark Mode Overrides */
+  --neutral-primary-soft: #0A0A0A;
+  --neutral-primary: #000000;
+  --neutral-primary-medium: #1A1A1A;
+  --neutral-primary-strong: #2A2A2A;
+  --neutral-secondary-soft: #0A0A0A;
+  --neutral-secondary: #000000;
+  --neutral-secondary-medium: #1A1A1A;
+  --neutral-secondary-strong: #2A2A2A;
   
-  --secondary: #F43F5E; /* Rose 500 */
+  --brand: #DAA346;
+  --brand-strong: #DAA346;
+
+  --heading: #FFFFFF;
+  --body: #E5E5E5;
+  --body-subtle: #CCCCCC;
+  --fg-brand: #E8BC6A;
+
+  --border-default: #FFFFFF;
+  --border-buffer: #000000;
+  --border-default-medium: #FFFFFF;
   
-  --surface: #0A0A0A; /* Neutral Dark Surface */
-  --surface-hover: #121212;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(255, 255, 255, 0.15);
-  
-  --success: #10B981; /* Mint Green */
-  --error: #EF4444; /* Bright Red */
-  --warning: #F59E0B; /* Amber */
+  /* Legacy dark mode */
+  --background: var(--neutral-primary-soft);
+  --surface: var(--neutral-primary-soft);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-hover: var(--primary-hover);
-  --color-secondary: var(--secondary);
-  --color-surface: var(--surface);
-  --color-surface-hover: var(--surface-hover);
-  --color-border: var(--border);
-  --color-border-hover: var(--border-hover);
+  --color-neutral-primary-soft: var(--neutral-primary-soft);
+  --color-neutral-primary: var(--neutral-primary);
+  --color-neutral-secondary-medium: var(--neutral-secondary-medium);
+  --color-neutral-tertiary: var(--neutral-tertiary);
+  --color-neutral-tertiary-soft: var(--neutral-tertiary-soft);
+  --color-neutral-tertiary-medium: var(--neutral-tertiary-medium);
+  
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-medium: var(--brand-medium);
+  
+  --color-section-brand: var(--section-brand);
+  --color-section-secondary: var(--section-secondary);
+  --color-section-cyan: var(--section-cyan);
+  --color-section-purple: var(--section-purple);
+  --color-section-green: var(--section-green);
+  --color-section-pink: var(--section-pink);
+  --color-section-blue: var(--section-blue);
+  --color-section-yellow: var(--section-yellow);
+  
+  --color-heading: var(--heading);
+  --color-body: var(--body);
+  --color-fg-brand: var(--fg-brand);
+  --color-fg-disabled: var(--fg-disabled);
+  --color-disabled: var(--disabled);
+  --color-dark: var(--dark);
+
+  --color-border-default: var(--border-default);
   
   --color-success: var(--success);
-  --color-error: var(--error);
+  --color-success-medium: var(--success-medium);
+  --color-danger: var(--danger);
+  --color-danger-medium: var(--danger-medium);
   --color-warning: var(--warning);
+  --color-warning-medium: var(--warning-medium);
+
+  --color-background: var(--neutral-primary-soft);
+  --color-foreground: var(--body);
+  --color-primary: var(--brand);
+  --color-surface: var(--neutral-primary-soft);
+
+  --font-sans: "Darker Grotesque", sans-serif;
+  --font-heading: "Darker Grotesque", sans-serif;
   
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --shadow-xs: 2px 2px 0px 0px var(--border-default);
+  --shadow-sm: 3px 3px 0px 0px var(--border-default);
+  --shadow-md: 4px 4px 0px 0px var(--border-default);
+  --shadow-lg: 6px 6px 0px 0px var(--border-default);
+  --shadow-xl: 8px 8px 0px 0px var(--border-default);
 }
 
 body {
-  background-color: #050505;
-  background-image: 
-    radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.07), transparent 45%),
-    radial-gradient(circle at 85% 30%, rgba(244, 63, 94, 0.07), transparent 45%);
-  color: var(--foreground);
-  background-attachment: fixed;
+  background-color: var(--neutral-primary-soft);
+  color: var(--body);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glassmorphism Utilities */
-@layer utilities {
-  .glass {
-    @apply bg-surface/80 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.4)];
+@layer components {
+  .input-field {
+    @apply w-full border-[3px] border-black bg-white px-4 py-3 text-[16px] font-bold text-black placeholder:text-black/40 shadow-[4px_4px_0px_0px_#000] outline-none focus:-translate-y-[2px] focus:translate-x-[2px] focus:shadow-[6px_6px_0px_0px_#000] transition-all;
   }
-  
-  .glass-card {
-    @apply bg-surface/90 backdrop-blur-3xl border border-white/[0.08] rounded-[2rem] shadow-2xl transition-all duration-300;
+  .form-label {
+    @apply text-[14px] font-black uppercase tracking-wider text-black bg-[var(--color-section-yellow)] px-2 py-1 inline-block w-max border-2 border-black;
   }
-  
-  .glass-card:hover {
-    @apply bg-surface border-white/[0.15] shadow-[0_12px_40px_rgba(0,0,0,0.5)];
+  .select-field {
+    @apply w-full border-[3px] border-black bg-white px-4 py-3 text-[16px] font-bold text-black shadow-[4px_4px_0px_0px_#000] outline-none focus:-translate-y-[2px] focus:translate-x-[2px] focus:shadow-[6px_6px_0px_0px_#000] transition-all cursor-pointer;
+  }
+  .btn-primary {
+    @apply w-full flex items-center justify-center gap-2 border-4 border-black bg-[var(--color-section-pink)] px-6 py-4 text-[20px] font-black uppercase text-black shadow-[4px_4px_0px_0px_#000] hover:-translate-y-[2px] hover:translate-x-[2px] hover:shadow-[6px_6px_0px_0px_#000] transition-all;
+  }
+  .divider-line {
+    @apply flex-1 border-t-4 border-black border-dashed;
   }
 }
 
-@layer components {
-  /* Buttons */
-  .btn-primary {
-    @apply w-full flex items-center justify-center gap-2 bg-surface border border-primary/50 text-primary hover:bg-primary/10 hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed font-bold py-3 px-4 rounded-[1.5rem] transition-all shadow-[0_4px_20px_rgba(16,185,129,0.15)];
-  }
-  .btn-primary-lg {
-    @apply w-full flex items-center justify-center gap-2 bg-surface border border-primary/50 text-primary hover:bg-primary/10 hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed font-bold py-4 px-6 rounded-[1.5rem] transition-all shadow-[0_4px_20px_rgba(16,185,129,0.15)];
-  }
-  .btn-secondary {
-    @apply flex-1 py-2 rounded-2xl text-sm font-semibold transition-all bg-surface text-zinc-400 border border-white/[0.08] hover:bg-surface-hover;
-  }
-  .btn-secondary-lg {
-    @apply flex-1 py-3 rounded-2xl text-sm font-semibold transition-all bg-surface text-zinc-400 border border-white/[0.08] hover:bg-surface-hover;
-  }
-  .btn-secondary-active {
-    @apply flex-1 py-2 rounded-2xl text-sm font-bold transition-all bg-primary/20 text-primary border border-primary/30;
-  }
-  .btn-secondary-lg-active {
-    @apply flex-1 py-3 rounded-2xl text-sm font-bold transition-all bg-primary/20 text-primary border border-primary/30;
-  }
-  .btn-icon {
-    @apply text-zinc-500 hover:text-white transition-colors bg-surface p-2 rounded-full border border-white/[0.08];
-  }
-
-  /* Inputs & Forms */
-  .input-field {
-    @apply w-full bg-surface border border-white/[0.08] rounded-2xl px-5 py-4 text-sm text-white font-medium placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all;
-  }
-  .select-field {
-    @apply w-full bg-surface border border-white/[0.08] rounded-2xl px-5 py-4 text-sm text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none;
-  }
-  .form-label {
-    @apply text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1;
-  }
-
-  /* Typography & Layout */
-  .heading-gradient {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary;
-  }
-  .badge {
-    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary w-fit text-sm font-medium;
-  }
-  .status-box {
-    @apply p-4 rounded-[1.5rem] bg-surface border border-white/[0.08] shadow-inner;
-  }
-  .divider-line {
-    @apply flex-grow border-t border-white/[0.15];
-  }
-  .btn-connect {
-    @apply w-full flex items-center justify-center gap-3 bg-surface hover:bg-surface-hover border border-white/[0.08] text-white font-bold py-4 px-4 rounded-[1.5rem] transition-all;
-  }
-  .btn-connect-active {
-    @apply w-full flex items-center justify-center gap-3 bg-success/10 hover:bg-error/10 border border-success/30 hover:border-error/30 text-success hover:text-error font-bold py-4 px-4 rounded-[1.5rem] transition-all;
+@layer utilities {
+  .brutalist-border {
+    border: 2px solid var(--border-default);
   }
 }
