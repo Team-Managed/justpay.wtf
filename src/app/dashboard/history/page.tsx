@@ -31,7 +31,7 @@ export default function DashboardHistory() {
       headers.join(','),
       ...transactions.map(tx => `${tx.rawTxHash},${tx.linkId},${tx.amount},${tx.fromChain},"${tx.date}",${tx.status}`)
     ].join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -53,13 +53,13 @@ export default function DashboardHistory() {
         <div className="p-6 border-b-4 border-black flex flex-col sm:flex-row justify-between items-center gap-4 bg-[var(--color-section-yellow)]">
           <div className="relative w-full sm:w-96">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-black" strokeWidth={3} />
-            <input 
-              type="text" 
-              placeholder="Search by TxID or Link ID..." 
+            <input
+              type="text"
+              placeholder="Search by TxID or Link ID..."
               className="w-full bg-white border-[3px] border-black px-4 py-3 pl-12 text-[16px] font-bold text-black placeholder:text-black/50 focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-shadow"
             />
           </div>
-          
+
           <button onClick={handleExportCSV} disabled={transactions.length === 0} className="w-full sm:w-auto px-6 py-3 flex items-center gap-2 border-[3px] border-black bg-white text-black font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[var(--color-section-pink)] hover:translate-x-[2px] hover:-translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
             <ArrowDownToLine className="w-5 h-5" strokeWidth={3} /> Export CSV
           </button>
@@ -96,11 +96,10 @@ export default function DashboardHistory() {
                     <td className="p-4 text-[16px] font-bold text-black uppercase border-r-4 border-black last:border-r-0">{tx.fromChain}</td>
                     <td className="p-4 text-[16px] font-bold text-black border-r-4 border-black last:border-r-0">{tx.date}</td>
                     <td className="p-4">
-                      <span className={`px-3 py-1 text-[12px] font-black uppercase border-2 border-black ${
-                        tx.status === 'Settled' ? 'bg-[var(--color-section-green)] text-black' : 
-                        tx.status === 'Pending' ? 'bg-[var(--color-section-yellow)] text-black' : 
-                        'bg-[var(--color-section-pink)] text-black'
-                      }`}>
+                      <span className={`px-3 py-1 text-[12px] font-black uppercase border-2 border-black ${tx.status === 'Settled' ? 'bg-[var(--color-section-green)] text-black' :
+                          tx.status === 'Pending' ? 'bg-[var(--color-section-yellow)] text-black' :
+                            'bg-[var(--color-section-pink)] text-black'
+                        }`}>
                         {tx.status}
                       </span>
                     </td>

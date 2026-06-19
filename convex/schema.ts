@@ -24,7 +24,7 @@ export default defineSchema({
     status: v.union(
       v.literal("active"),
       v.literal("completed"), // single-use fixed-amount links after payment
-      v.literal("cancelled"),  // receiver manually deactivated
+      v.literal("cancelled"), // receiver manually deactivated
     ),
     expiresAt: v.optional(v.number()), // ms epoch. undefined = never expires.
   })
