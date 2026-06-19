@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || 'https://*.convex.cloud';
+const convexUrl =
+  process.env.NEXT_PUBLIC_CONVEX_URL || "https://*.convex.cloud";
 
 const cspHeader = `
   default-src 'self';
@@ -18,14 +19,18 @@ const cspHeader = `
 `;
 
 const securityHeaders = [
-  { key: 'Content-Security-Policy', value: cspHeader.replace(/\n/g, '') },
-  { key: 'X-Frame-Options', value: 'DENY' },
-  { key: 'X-Content-Type-Options', value: 'nosniff' },
-  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  { key: "Content-Security-Policy", value: cspHeader.replace(/\n/g, "") },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=()",
+  },
 ];
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   typescript: {
     ignoreBuildErrors: true,
   },
