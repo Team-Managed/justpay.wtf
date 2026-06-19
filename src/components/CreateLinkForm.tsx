@@ -97,7 +97,7 @@ export function CreateLinkForm() {
     <div className="flex flex-col gap-4 w-full">
       {/* Main Widget Box */}
       <div className="flex flex-col gap-4 relative z-10 transition-transform">
-        
+
         {/* Destination Address Input (Top Priority) */}
         <div className="flex flex-col gap-2 relative">
           <label className="text-[12px] font-black uppercase tracking-wider text-black bg-[var(--color-section-yellow)] px-2 py-1 inline-block w-max border-2 border-black -mb-3 relative z-10 ml-2">Receive to Address</label>
@@ -110,7 +110,7 @@ export function CreateLinkForm() {
               className="w-full bg-white border-[3px] border-black px-4 py-4 pr-12 text-[16px] font-bold text-black placeholder:text-black/40 outline-none focus:bg-[var(--color-brand-softer)] transition-colors"
             />
             {connectedAddress && !address && (
-              <button 
+              <button
                 onClick={() => setAddress(connectedAddress)}
                 className="absolute right-3 bg-[var(--color-section-cyan)] border-2 border-black p-2 hover:bg-[var(--color-section-green)] transition-colors group"
                 title="Autofill from connected wallet"

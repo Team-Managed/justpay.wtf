@@ -83,20 +83,24 @@ export const Navbar = () => {
 
         <motion.div
           initial={{
-            clipPath: "polygon(0 0, 100% 0, 100% 0, 0 0)",
+            transformOrigin: "top center",
+            y: -10,
+            opacity: 0,
+            scaleY: 0.95,
             x: "0px"
           }}
           animate={{
-            clipPath: open
-              ? "polygon(0 0, 100% 0, 100% 100%, 0 100%)"
-              : "polygon(0 0, 100% 0, 100% 0, 0 0)",
+            y: open ? 0 : -10,
+            opacity: open ? 1 : 0,
+            scaleY: open ? 1 : 0.95,
             x: open ? "-187.5px" : "0px"
           }}
           transition={{
             delay: open ? 0.3 : 0,
-            duration: open ? 0.8 : 0.5,
-            ease: open ? "circIn" : [0.4, 0, 0.2, 1],
+            duration: open ? 0.4 : 0.4,
+            ease: open ? "circOut" : [0.4, 0, 0.2, 1],
           }}
+          style={{ pointerEvents: open ? 'auto' : 'none' }}
           className="w-[1000px] z-[90] absolute top-full mt-2 h-[500px] bg-[#111111] p-6 flex items-center justify-center border-2 border-black shadow-[var(--shadow-xl)]"
         >
           <motion.div className="flex-1 h-full bg-[#1E1E1E] flex flex-col p-8 text-white/80 border-2 border-black">
@@ -126,12 +130,12 @@ export const Navbar = () => {
             <h3 className="text-[12px] font-bold text-white/50 uppercase tracking-widest m-0">EXPLORE</h3>
             <div className="mt-6 flex flex-col gap-2">
               <div className="border-b-2 border-white/10">
-                <button 
-                  onClick={() => setChainsOpen(!chainsOpen)} 
+                <button
+                  onClick={() => setChainsOpen(!chainsOpen)}
                   className="w-full text-left py-4 flex items-center justify-between text-[24px] font-bold text-white hover:text-[var(--color-section-yellow)] transition-colors cursor-pointer"
                 >
                   <span>Supported Chains</span>
-                  <motion.span 
+                  <motion.span
                     animate={{ rotate: chainsOpen ? 180 : 0 }}
                     className="text-[16px]"
                   >
