@@ -37,7 +37,7 @@ export function HeroSection() {
 
       {/* Full Width Falling Coins Layer */}
       <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden opacity-[0.8]" style={{ perspective: "1000px" }}>
-        {[...Array(20)].map((_, i) => {
+        {[...Array(24)].map((_, i) => {
           const domains = [
             'bitcoin.org', 'ethereum.org', 'solana.com', 'sui.io', 
             'base.org', 'arbitrum.io', 'optimism.io', 'polygon.technology',
@@ -48,12 +48,23 @@ export function HeroSection() {
           const startX = (i % 5) * 45;
           const startY = (i % 7) * 35;
           
+          // Spread coins mostly to edges, with very few in the center
+          const leftDistisions = [
+             5, 12, 18, 26, 32, // Left side
+             75, 82, 88, 95, 98, // Right side
+             2, 15, 23, 85, 92,  // More edges
+             10, 80, 20, 90,     // Edges
+             45, 55, 48,         // Barely few in the center
+             28, 72              // Padding
+          ];
+          const leftPos = leftDistisions[i % leftDistisions.length];
+
           return (
             <motion.div
              key={`coin-${i}`}
              className="absolute w-12 h-12 sm:w-16 sm:h-16"
              initial={{
-               y: -150,
+               y: -150 - (i * 30),
                rotateX: startX,
                rotateY: startY,
                rotateZ: 0,
@@ -69,35 +80,42 @@ export function HeroSection() {
                duration: 10 + (i % 5) * 3,
                repeat: Infinity,
                ease: "linear",
-               delay: (i % 7) * 0.8
+               delay: (i % 7) * 0.6
              }}
              style={{
-               left: `${(i * 5.1) % 100}%`,
+               left: `${leftPos}%`,
                transformStyle: "preserve-3d"
              }}
             >
-             {/* 3D Coin Layers to create thickness */}
-             {[0, 1, 2, 3, 4].map(layer => (
+             {/* Coin Edge (Solid black cylinder internal fill) */}
+             {[-4, -3, -2, -1, 0, 1, 2, 3, 4].map(z => (
                <div 
-                 key={layer}
-                 className="absolute inset-0 rounded-full border-[3px] border-black bg-white flex items-center justify-center p-[6px]"
+                 key={`edge-${z}`}
+                 className="absolute inset-0 rounded-full bg-black"
                  style={{ 
-                   transform: `translateZ(${layer * 2 - 4}px)`,
-                   backfaceVisibility: "hidden"
+                   transform: `translateZ(${z}px)`,
                  }}
-               >
-                 <img src={`https://img.logo.dev/${domain}?token=pk_BShsdiwDTuyRVVBW5GadOg`} alt="coin" className="w-full h-full object-contain rounded-full" />
-               </div>
+               />
              ))}
-             {/* Back face (rotated 180deg) */}
+             
+             {/* Front face */}
              <div 
                className="absolute inset-0 rounded-full border-[3px] border-black bg-white flex items-center justify-center p-[6px]"
                style={{ 
-                 transform: `translateZ(-4px) rotateY(180deg)`,
-                 backfaceVisibility: "hidden"
+                 transform: `translateZ(5px)`,
                }}
              >
-               <img src={`https://img.logo.dev/${domain}?token=pk_BShsdiwDTuyRVVBW5GadOg`} alt="coin" className="w-full h-full object-contain rounded-full" />
+               <img src={`https://img.logo.dev/${domain}?token=pk_BShsdiwDTuyRVVBW5GadOg`} alt="coin" className="w-full h-full object-contain rounded-full" style={{ backfaceVisibility: 'hidden' }} />
+             </div>
+             
+             {/* Back face */}
+             <div 
+               className="absolute inset-0 rounded-full border-[3px] border-black bg-white flex items-center justify-center p-[6px]"
+               style={{ 
+                 transform: `translateZ(-5px) rotateY(180deg)`,
+               }}
+             >
+               <img src={`https://img.logo.dev/${domain}?token=pk_BShsdiwDTuyRVVBW5GadOg`} alt="coin" className="w-full h-full object-contain rounded-full" style={{ backfaceVisibility: 'hidden' }} />
              </div>
             </motion.div>
           )
