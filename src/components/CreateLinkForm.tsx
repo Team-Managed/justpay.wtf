@@ -8,9 +8,16 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { FeeDisclosureBanner } from './shared/FeeDisclosureBanner';
 import { ChainTokenSelector, SupportedChain } from './shared/ChainTokenSelector';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const TOKEN_DOMAINS: Record<string, string> = {
+  'ETH': 'ethereum.org',
+  'USDC': 'circle.com',
+  'USDT': 'tether.to',
+  'SOL': 'solana.com',
+  'SUI': 'sui.io'
+};
 
 export function CreateLinkForm() {
   const [address, setAddress] = useState('');
@@ -56,8 +63,6 @@ export function CreateLinkForm() {
       else if (expiry === '7d') expiresAt = now + 7 * 24 * 60 * 60 * 1000;
       else if (expiry === 'none') expiresAt = undefined;
 
-      // if amount is empty, the payment link is fully open (payer can enter any amount)
-      // and it acts like a permanent link
       const linkType = expiry === 'none' && !amount ? 'tip_jar' : 'invoice';
 
       const result = await createLinkMutation({
@@ -73,14 +78,12 @@ export function CreateLinkForm() {
         linkType: linkType as any,
       });
 
-      // Save to localStorage LRU
       const existingStr = localStorage.getItem('justpay_links');
       let links = existingStr ? JSON.parse(existingStr) : [];
       links.unshift({ shortCode: result.shortCode, createdAt: new Date().toISOString() });
       if (links.length > 5) links = links.slice(0, 5);
       localStorage.setItem('justpay_links', JSON.stringify(links));
 
-      // Redirect to payment page
       router.push(`/${result.shortCode}`);
     } catch (error: any) {
       console.error(error);
@@ -142,7 +145,10 @@ export function CreateLinkForm() {
               placeholder="0.0"
               className="w-full bg-transparent px-2 py-3 text-[32px] md:text-[40px] font-black text-black placeholder:text-black/20 outline-none"
             />
-            <span className="text-2xl font-black pr-4">{tokenSymbol}</span>
+            <div className="flex items-center gap-2 pr-4 bg-white px-3 py-2 border-2 border-black">
+              <img src={`https://img.logo.dev/${TOKEN_DOMAINS[tokenSymbol]}?token=pk_BShsdiwDTuyRVVBW5GadOg`} alt={tokenSymbol} className="w-6 h-6 rounded-full border border-black" />
+              <span className="text-xl font-black">{tokenSymbol}</span>
+            </div>
           </div>
         </div>
 
