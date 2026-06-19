@@ -31,6 +31,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Azure App Service handles Gzip/Brotli — avoid double-compression
+  compress: false,
+  // Remove X-Powered-By header for security
+  poweredByHeader: false,
   typescript: {
     ignoreBuildErrors: true,
   },
