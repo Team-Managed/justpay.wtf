@@ -56,7 +56,7 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
   if (connected) {
     const address = solConnected ? publicKey?.toBase58() : evmConnected ? evmAddress : suiAccount?.address;
     const shortAddress = address ? `${address.slice(0, 4)}...${address.slice(-4)}` : '';
-    
+
     if (variant === 'input') {
       return (
         <button
@@ -65,8 +65,7 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
             if (evmConnected) evmDisconnect();
             if (suiConnected) suiDisconnect();
           }}
-          className="bg-[var(--color-section-pink)] border-2 border-black p-2 hover:bg-[var(--color-section-yellow)] transition-colors group hidden md:flex items-center"
-          title="Disconnect wallet"
+          className="bg-[var(--color-section-pink)] border-2 border-black p-2 hover:bg-[var(--color-section-yellow)] transition-colors group hidden md:flex items-center t-tt-trigger"
         >
           <X className="w-5 h-5 text-black" strokeWidth={3} />
         </button>
@@ -95,8 +94,7 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
       {variant === 'input' ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-[var(--color-section-cyan)] border-2 border-black p-2 hover:bg-[var(--color-section-green)] transition-colors group hidden md:block"
-          title="Connect wallet"
+          className="bg-[var(--color-section-cyan)] border-2 border-black p-2 hover:bg-[var(--color-section-green)] transition-colors group hidden md:block t-tt-trigger"
         >
           <Wallet className="w-5 h-5 text-black group-hover:scale-110 transition-transform" />
         </button>
