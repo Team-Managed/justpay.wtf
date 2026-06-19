@@ -11,7 +11,7 @@ export default function LinksManagement() {
   const { address: evmAddress } = useAccount();
   const address = publicKey?.toBase58() || evmAddress;
 
-  const links = useQuery(api.links.getLinksByMerchant, address ? { merchantAddress: address } : "skip");
+  const links = useQuery(api.links.getLinksByReceiver, address ? { receiverAddress: address } : "skip");
   const isLoading = links === undefined;
 
   const handleCopy = (shortCode: string) => {
@@ -47,7 +47,7 @@ export default function LinksManagement() {
               <tbody className="divide-y-4 divide-black bg-white">
                 {(links || []).map((link) => (
                   <tr key={link._id} className="hover:bg-[var(--color-section-cyan)] transition-colors">
-                    <td className="p-4 text-[16px] font-bold text-black border-r-4 border-black last:border-r-0">{link.label || 'Payment'}</td>
+                    <td className="p-4 text-[16px] font-bold text-black border-r-4 border-black last:border-r-0">{link.note || 'Payment'}</td>
                     <td className="p-4 text-[20px] font-black text-black border-r-4 border-black last:border-r-0">${link.amount} {link.destinationTokenSymbol}</td>
                     <td className="p-4 border-r-4 border-black last:border-r-0">
                       <span className={`px-3 py-1 text-[12px] font-black uppercase border-2 border-black ${

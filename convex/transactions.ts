@@ -49,7 +49,7 @@ export const confirmTransaction = mutation({
     });
 
     const link = await ctx.db.get(tx.linkId);
-    if (link && link.linkType === "invoice") {
+    if (link && link.amount) {
       await ctx.db.patch(link._id, { status: "completed" });
     }
   },
@@ -66,13 +66,13 @@ export const getTransactionsByLink = query({
   },
 });
 
-export const getTransactionsByMerchant = query({
-  args: { merchantAddress: v.string() },
+export const getTransactionsByReceiver = query({
+  args: { receiverAddress: v.string() },
   handler: async (ctx, args) => {
     const links = await ctx.db
       .query("paymentLinks")
-      .withIndex("by_merchant", (q) =>
-        q.eq("merchantAddress", args.merchantAddress),
+      .withIndex("by_receiver", (q) =>
+        q.eq("receiverAddress", args.receiverAddress),
       )
       .collect();
 

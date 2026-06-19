@@ -3,32 +3,33 @@ import { v } from "convex/values";
 
 export default defineSchema({
   paymentLinks: defineTable({
+    // Lookup key (used as URL slug: justpay.wtf/abc1234)
     shortCode: v.string(),
-    linkType: v.union(
-      v.literal("invoice"),
-      v.literal("tip_jar"),
-      v.literal("recurring"),
-    ),
-    merchantAddress: v.string(),
-    destinationChain: v.string(),
+
+    // Receiver identity — the only required field
+    receiverAddress: v.string(),
+    receiverEmail: v.optional(v.string()),
+
+    // Payment preferences — all optional.
+    // If not set, sender chooses freely in the widget.
+    destinationChain: v.optional(v.string()),
     destinationTokenAddress: v.optional(v.string()),
-    destinationTokenSymbol: v.string(),
-    amount: v.optional(v.string()),
-    label: v.optional(v.string()),
-    memo: v.optional(v.string()),
-    merchantEmail: v.optional(v.string()),
+    destinationTokenSymbol: v.optional(v.string()),
+    amount: v.optional(v.string()), // human-readable (e.g. "10.5")
+
+    // Optional description shown on the checkout page
+    note: v.optional(v.string()),
+
+    // Lifecycle
     status: v.union(
       v.literal("active"),
-      v.literal("completed"),
-      v.literal("expired"),
-      v.literal("cancelled"),
+      v.literal("completed"), // single-use fixed-amount links after payment
+      v.literal("cancelled"),  // receiver manually deactivated
     ),
-    expiresAt: v.optional(v.number()),
-    linkIdHash: v.string(),
+    expiresAt: v.optional(v.number()), // ms epoch. undefined = never expires.
   })
     .index("by_shortCode", ["shortCode"])
-    .index("by_merchant", ["merchantAddress"])
-    .index("by_status", ["status"]),
+    .index("by_receiver", ["receiverAddress"]),
 
   transactions: defineTable({
     linkId: v.id("paymentLinks"),

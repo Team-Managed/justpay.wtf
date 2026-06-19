@@ -40,9 +40,9 @@ export default function PaymentPage() {
       <div className="w-full max-w-md z-10 flex flex-col gap-6">
         <PaymentCard 
           amount={Number(link.amount) || 0}
-          tokenSymbol={link.destinationTokenSymbol}
-          recipientAddress={link.merchantAddress}
-          memo={link.label}
+          tokenSymbol={link.destinationTokenSymbol ?? ''}
+          recipientAddress={link.receiverAddress}
+          memo={link.note}
         />
 
         <div className="glass-card p-6 w-full">
@@ -59,9 +59,9 @@ export default function PaymentPage() {
           ) : (
             <CheckoutClient 
               linkId={link._id}
-              chain={link.destinationChain}
-              recipientAddress={link.merchantAddress}
-              tokenSymbol={link.destinationTokenSymbol}
+              chain={link.destinationChain ?? ''}
+              recipientAddress={link.receiverAddress}
+              tokenSymbol={link.destinationTokenSymbol ?? ''}
               amount={(link.amount || '0').toString()}
             />
           )}

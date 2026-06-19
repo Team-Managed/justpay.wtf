@@ -11,7 +11,7 @@ export default function DashboardHistory() {
   const { publicKey } = useWallet();
   const address = evmAddress || publicKey?.toBase58();
 
-  const rawTransactions = useQuery(api.transactions.getTransactionsByMerchant, address ? { merchantAddress: address } : "skip");
+  const rawTransactions = useQuery(api.transactions.getTransactionsByReceiver, address ? { receiverAddress: address } : "skip");
   const loading = rawTransactions === undefined;
 
   const transactions = (rawTransactions || []).map((tx) => ({

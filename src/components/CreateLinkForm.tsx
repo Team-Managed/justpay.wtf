@@ -27,7 +27,7 @@ export function CreateLinkForm() {
   const [tokenSymbol, setTokenSymbol] = useState('USDC');
   const [email, setEmail] = useState('');
   const [memo, setMemo] = useState('');
-  const [expiry, setExpiry] = useState('15m');
+  const [expiry, setExpiry] = useState('none');
   const [isLoading, setIsLoading] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const router = useRouter();
@@ -64,19 +64,15 @@ export function CreateLinkForm() {
       else if (expiry === '7d') expiresAt = now + 7 * 24 * 60 * 60 * 1000;
       else if (expiry === 'none') expiresAt = undefined;
 
-      const linkType = expiry === 'none' && !amount ? 'tip_jar' : 'invoice';
-
       const result = await createLinkMutation({
-        merchantAddress: finalAddress,
+        receiverAddress: finalAddress,
         destinationChain: chain,
         destinationTokenSymbol: tokenSymbol,
         destinationTokenAddress: chain === 'sui' || chain === 'suiTestnet' ? '0x2::sui::SUI' : undefined,
         amount: amount ? amount : undefined,
-        merchantEmail: email || undefined,
-        memo: memo || undefined,
-        label: 'justpay.wtf Payment',
+        receiverEmail: email || undefined,
+        note: memo || undefined,
         expiresAt,
-        linkType: linkType as any,
       });
 
       const existingStr = localStorage.getItem('justpay_links');

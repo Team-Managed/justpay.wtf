@@ -1,66 +1,48 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-function generateShortCode(): string {
+async function generateUniqueShortCode(ctx: any): Promise<string> {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < 7; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let attempt = 0; attempt < 5; attempt++) {
+    let code = "";
+    for (let i = 0; i < 7; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    const existing = await ctx.db
+      .query("paymentLinks")
+      .withIndex("by_shortCode", (q: any) => q.eq("shortCode", code))
+      .unique();
+    if (!existing) return code;
   }
-  return result;
-}
-
-function computeLinkIdHash(shortCode: string): string {
-  // Simple hash for on-chain reference - will be replaced with proper crypto hash when we add smart contracts
-  let hash = 0;
-  for (let i = 0; i < shortCode.length; i++) {
-    const char = shortCode.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return "0x" + Math.abs(hash).toString(16).padStart(64, "0");
+  throw new Error("Failed to generate unique short code after 5 attempts");
 }
 
 export const createLink = mutation({
   args: {
-    merchantAddress: v.string(),
-    destinationChain: v.string(),
-    destinationTokenSymbol: v.string(),
+    receiverAddress: v.string(),
+    receiverEmail: v.optional(v.string()),
+    destinationChain: v.optional(v.string()),
+    destinationTokenSymbol: v.optional(v.string()),
     destinationTokenAddress: v.optional(v.string()),
     amount: v.optional(v.string()),
-    label: v.optional(v.string()),
-    memo: v.optional(v.string()),
-    merchantEmail: v.optional(v.string()),
+    note: v.optional(v.string()),
     expiresAt: v.optional(v.number()),
-    linkType: v.optional(
-      v.union(
-        v.literal("invoice"),
-        v.literal("tip_jar"),
-        v.literal("recurring"),
-      ),
-    ),
   },
   handler: async (ctx, args) => {
-    const shortCode = generateShortCode();
-    const linkIdHash = computeLinkIdHash(shortCode);
-
+    const shortCode = await generateUniqueShortCode(ctx);
     const id = await ctx.db.insert("paymentLinks", {
       shortCode,
-      linkType: args.linkType ?? "invoice",
-      merchantAddress: args.merchantAddress,
+      receiverAddress: args.receiverAddress,
+      receiverEmail: args.receiverEmail,
       destinationChain: args.destinationChain,
       destinationTokenSymbol: args.destinationTokenSymbol,
       destinationTokenAddress: args.destinationTokenAddress,
       amount: args.amount,
-      label: args.label,
-      memo: args.memo,
-      merchantEmail: args.merchantEmail,
+      note: args.note,
       status: "active",
       expiresAt: args.expiresAt,
-      linkIdHash,
     });
-
-    return { id, shortCode, linkIdHash };
+    return { id, shortCode };
   },
 });
 
@@ -74,15 +56,14 @@ export const getLinkByShortCode = query({
   },
 });
 
-export const getLinksByMerchant = query({
-  args: { merchantAddress: v.string() },
+export const getLinksByReceiver = query({
+  args: { receiverAddress: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("paymentLinks")
-      .withIndex("by_merchant", (q) =>
-        q.eq("merchantAddress", args.merchantAddress),
+      .withIndex("by_receiver", (q) =>
+        q.eq("receiverAddress", args.receiverAddress),
       )
-      .order("desc")
       .collect();
   },
 });
