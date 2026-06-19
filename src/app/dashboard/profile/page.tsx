@@ -7,7 +7,7 @@ import { useAccount } from 'wagmi';
 export default function DashboardProfile() {
   const { publicKey } = useWallet();
   const { address: evmAddress } = useAccount();
-  
+
   const solAddressStr = publicKey ? publicKey.toBase58() : '';
   const evmAddressStr = evmAddress || '';
 
@@ -27,24 +27,24 @@ export default function DashboardProfile() {
             </div>
             <h2 className="text-2xl font-black text-black uppercase tracking-wider">Default Settlement Wallet</h2>
           </div>
-          
+
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <label className="text-[14px] font-black uppercase tracking-wider text-black bg-[var(--color-section-pink)] px-2 py-1 inline-block w-max border-2 border-black">Solana Address</label>
-              <input 
-                type="text" 
-                value={solAddressStr} 
+              <input
+                type="text"
+                value={solAddressStr}
                 placeholder="Connect Solana wallet to view"
                 className="w-full bg-white border-[3px] border-black px-4 py-3 text-[16px] font-mono font-bold text-black placeholder:text-black/50 focus:outline-none"
                 readOnly
               />
             </div>
-            
+
             <div className="flex flex-col gap-2">
               <label className="text-[14px] font-black uppercase tracking-wider text-black bg-[var(--color-section-cyan)] px-2 py-1 inline-block w-max border-2 border-black">EVM Address (Ethereum, Arbitrum &amp; 40+ chains)</label>
-              <input 
-                type="text" 
-                value={evmAddressStr} 
+              <input
+                type="text"
+                value={evmAddressStr}
                 placeholder="Connect EVM wallet to view"
                 className="w-full bg-white border-[3px] border-black px-4 py-3 text-[16px] font-mono font-bold text-black placeholder:text-black/50 focus:outline-none"
                 readOnly

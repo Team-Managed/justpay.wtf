@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       <div className="bg-[var(--color-neutral-primary-soft)] border-4 border-black p-8 sm:p-12 shadow-[var(--shadow-md)]">
         <h1 className="text-4xl md:text-6xl font-black text-black uppercase mb-6">Privacy Policy</h1>
         <p className="text-lg font-bold text-black/60 mb-8 border-b-4 border-black pb-4 inline-block">Last Updated: {new Date().toLocaleDateString()}</p>
-        
+
         <div className="space-y-6 text-black font-bold text-lg">
           <p>
             Your privacy is important to us. justpay.wtf is designed to collect as little personal information as possible.

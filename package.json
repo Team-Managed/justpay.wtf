@@ -13,6 +13,7 @@
     "@gsap/react": "^2.1.2",
     "@lifi/sdk": "^4.0.0",
     "@lifi/sdk-provider-sui": "^4.0.0",
+    "@lifi/wallet-management": "^4.0.0",
     "@lifi/widget": "^4.0.0",
     "@lifi/widget-provider-ethereum": "^4.0.0",
     "@lifi/widget-provider-solana": "^4.0.0",

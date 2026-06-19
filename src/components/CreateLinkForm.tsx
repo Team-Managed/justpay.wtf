@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, Wallet, ClipboardPaste } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useAccount } from 'wagmi';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useAccount as useLiFiAccount } from '@lifi/wallet-management';
+import { ChainType } from '@lifi/sdk';
+import { useCurrentAccount } from '@mysten/dapp-kit'; // Sui separate — dep conflict
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { WalletConnectButton } from './shared/WalletConnectButton';
@@ -33,25 +33,24 @@ export function CreateLinkForm() {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const router = useRouter();
 
-  const { address: evmAddress, chainId: evmChainId } = useAccount();
-  const { publicKey } = useWallet();
+  const { account: evmAccount } = useLiFiAccount({ chainType: ChainType.EVM });
+  const { account: svmAccount } = useLiFiAccount({ chainType: ChainType.SVM });
   const suiAccount = useCurrentAccount();
-  const connectedAddress = evmAddress || publicKey?.toBase58() || suiAccount?.address;
+  const connectedAddress = evmAccount?.address || svmAccount?.address || suiAccount?.address;
   const createLinkMutation = useMutation(api.links.createLink);
 
   useEffect(() => {
-    if (evmAddress && evmChainId) {
-      // Auto-fill address AND the specific EVM chain the wallet is currently on
-      if (!address) setAddress(evmAddress);
-      if (!chain) setChain(evmChainId.toString());
-    } else if (publicKey) {
-      if (!address) setAddress(publicKey.toBase58());
+    if (evmAccount?.address && evmAccount?.chainId) {
+      if (!address) setAddress(evmAccount.address);
+      if (!chain) setChain(evmAccount.chainId.toString());
+    } else if (svmAccount?.address) {
+      if (!address) setAddress(svmAccount.address);
       if (!chain) setChain('sol');
     } else if (suiAccount?.address) {
       if (!address) setAddress(suiAccount.address);
       if (!chain) setChain('sui');
     }
-  }, [evmAddress, evmChainId, publicKey, suiAccount?.address]);
+  }, [evmAccount?.address, evmAccount?.chainId, svmAccount?.address, suiAccount?.address]);
 
   const handleCreate = async () => {
     const finalAddress = address || connectedAddress;
