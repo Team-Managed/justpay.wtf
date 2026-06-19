@@ -15,10 +15,10 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isSuiModalOpen, setIsSuiModalOpen] = useState(false);
-  
+
   const { publicKey, connected: solConnected, disconnect: solDisconnect } = useWallet();
   const { setVisible: setSolanaModalVisible } = useWalletModal();
-  
+
   const { address: evmAddress, isConnected: evmConnected } = useAccount();
   const { connect: evmConnect } = useConnect();
   const { disconnect: evmDisconnect } = useDisconnect();
@@ -52,7 +52,7 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
     const address = solConnected ? publicKey?.toBase58() : evmConnected ? evmAddress : suiAccount?.address;
     const shortAddress = address ? `${address.slice(0, 4)}...${address.slice(-4)}` : '';
     return (
-      <BrutalistButton 
+      <BrutalistButton
         variant="brand"
         onClick={() => {
           if (solConnected) solDisconnect();
@@ -70,7 +70,7 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
 
   return (
     <>
-      <BrutalistButton 
+      <BrutalistButton
         variant="tertiary"
         onClick={() => setIsOpen(true)}
       >
@@ -87,7 +87,7 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
       {isOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-[var(--color-neutral-primary-soft)] border-4 border-black w-full max-w-sm relative animate-in fade-in zoom-in duration-200 shadow-[var(--shadow-xl)] transform rotate-1">
-            <button 
+            <button
               onClick={() => setIsOpen(false)}
               className="absolute -top-4 -right-4 bg-[var(--color-section-pink)] border-4 border-black p-2 text-black hover:bg-[var(--color-section-yellow)] shadow-[var(--shadow-xs)] transition-colors z-10"
             >
@@ -95,8 +95,8 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
             </button>
             <div className="p-8 flex flex-col gap-6">
               <h2 className="text-[28px] font-black text-black text-center mb-2 uppercase border-b-4 border-black pb-2">Connect Wallet</h2>
-              
-              <button 
+
+              <button
                 onClick={() => {
                   setIsOpen(false);
                   evmConnect({ connector: injected() });
@@ -104,15 +104,15 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
                 className="flex items-center justify-between p-4 bg-blue-100 border-4 border-black hover:bg-blue-300 hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[var(--shadow-sm)] transition-all group w-full"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500 border-2 border-black flex items-center justify-center shadow-[var(--shadow-xs)]">
-                    <div className="w-4 h-4 rounded-full bg-white border-2 border-black" />
+                  <div className="w-10 h-10 bg-white border-2 border-black flex items-center justify-center shadow-[var(--shadow-xs)]">
+                    <img src="https://img.logo.dev/base.org?token=pk_BShsdiwDTuyRVVBW5GadOg&bg=transparent" alt="Base" className="w-6 h-6 object-contain bg-transparent" />
                   </div>
                   <span className="font-black text-[18px] text-black uppercase tracking-wider">Base (EVM)</span>
                 </div>
                 <ChevronRight className="w-6 h-6 text-black group-hover:translate-x-1 transition-transform" strokeWidth={3} />
               </button>
 
-              <button 
+              <button
                 onClick={() => {
                   setIsOpen(false);
                   setSolanaModalVisible(true);
@@ -120,24 +120,24 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
                 className="flex items-center justify-between p-4 bg-purple-100 border-4 border-black hover:bg-purple-300 hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[var(--shadow-sm)] transition-all group w-full"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500 border-2 border-black flex items-center justify-center shadow-[var(--shadow-xs)]">
-                    <div className="w-5 h-5 rounded-full bg-white border-2 border-black" />
+                  <div className="w-10 h-10 bg-white border-2 border-black flex items-center justify-center shadow-[var(--shadow-xs)]">
+                    <img src="https://img.logo.dev/solana.com?token=pk_BShsdiwDTuyRVVBW5GadOg&bg=transparent" alt="Solana" className="w-6 h-6 object-contain bg-transparent" />
                   </div>
                   <span className="font-black text-[18px] text-black uppercase tracking-wider">Solana</span>
                 </div>
                 <ChevronRight className="w-6 h-6 text-black group-hover:translate-x-1 transition-transform" strokeWidth={3} />
               </button>
 
-              <button 
+              <button
                 onClick={() => {
                   setIsOpen(false);
                   setIsSuiModalOpen(true);
                 }}
-                className="flex items-center justify-between p-4 bg-[#6FBCF0]/20 border-4 border-black hover:bg-[#6FBCF0]/40 hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[var(--shadow-sm)] transition-all group w-full"
+                className="flex items-center justify-between p-4 bg-[var(--color-section-cyan)] border-4 border-black hover:bg-[var(--color-section-cyan)]/80 hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[var(--shadow-sm)] transition-all group w-full"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#6FBCF0] border-2 border-black flex items-center justify-center shadow-[var(--shadow-xs)]">
-                    <img src="/icons/sui.svg" alt="Sui" className="w-5 h-5" />
+                  <div className="w-10 h-10 bg-white border-2 border-black flex items-center justify-center shadow-[var(--shadow-xs)]">
+                    <img src="https://img.logo.dev/sui.io?token=pk_BShsdiwDTuyRVVBW5GadOg&bg=transparent" alt="Sui" className="w-6 h-6 object-contain bg-transparent" />
                   </div>
                   <span className="font-black text-[18px] text-black uppercase tracking-wider">Sui</span>
                 </div>
