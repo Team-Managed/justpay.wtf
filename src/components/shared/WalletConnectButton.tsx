@@ -37,8 +37,6 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
 
   const connected = solConnected || evmConnected || suiConnected;
 
-
-
   if (!mounted) {
     return (
       <BrutalistButton variant="tertiary" className="opacity-50 cursor-not-allowed">
@@ -104,9 +102,7 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
                 className="flex items-center justify-between p-4 bg-blue-100 border-4 border-black hover:bg-blue-300 hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[var(--shadow-sm)] transition-all group w-full"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white border-2 border-black flex items-center justify-center shadow-[var(--shadow-xs)]">
-                    <img src="https://img.logo.dev/base.org?token=pk_BShsdiwDTuyRVVBW5GadOg&bg=transparent" alt="Base" className="w-6 h-6 object-contain bg-transparent" />
-                  </div>
+                  <img src="https://img.logo.dev/base.org?token=pk_BShsdiwDTuyRVVBW5GadOg&bg=transparent" alt="Base" className="w-8 h-8 object-contain bg-transparent" />
                   <span className="font-black text-[18px] text-black uppercase tracking-wider">Base (EVM)</span>
                 </div>
                 <ChevronRight className="w-6 h-6 text-black group-hover:translate-x-1 transition-transform" strokeWidth={3} />
@@ -120,9 +116,7 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
                 className="flex items-center justify-between p-4 bg-purple-100 border-4 border-black hover:bg-purple-300 hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[var(--shadow-sm)] transition-all group w-full"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white border-2 border-black flex items-center justify-center shadow-[var(--shadow-xs)]">
-                    <img src="https://img.logo.dev/solana.com?token=pk_BShsdiwDTuyRVVBW5GadOg&bg=transparent" alt="Solana" className="w-6 h-6 object-contain bg-transparent" />
-                  </div>
+                  <img src="https://img.logo.dev/solana.com?token=pk_BShsdiwDTuyRVVBW5GadOg&bg=transparent" alt="Solana" className="w-8 h-8 object-contain bg-transparent" />
                   <span className="font-black text-[18px] text-black uppercase tracking-wider">Solana</span>
                 </div>
                 <ChevronRight className="w-6 h-6 text-black group-hover:translate-x-1 transition-transform" strokeWidth={3} />
@@ -136,9 +130,7 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
                 className="flex items-center justify-between p-4 bg-[var(--color-section-cyan)] border-4 border-black hover:bg-[var(--color-section-cyan)]/80 hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[var(--shadow-sm)] transition-all group w-full"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white border-2 border-black flex items-center justify-center shadow-[var(--shadow-xs)]">
-                    <img src="https://img.logo.dev/sui.io?token=pk_BShsdiwDTuyRVVBW5GadOg&bg=transparent" alt="Sui" className="w-6 h-6 object-contain bg-transparent" />
-                  </div>
+                  <img src="https://img.logo.dev/sui.io?token=pk_BShsdiwDTuyRVVBW5GadOg&bg=transparent" alt="Sui" className="w-8 h-8 object-contain bg-transparent" />
                   <span className="font-black text-[18px] text-black uppercase tracking-wider">Sui</span>
                 </div>
                 <ChevronRight className="w-6 h-6 text-black group-hover:translate-x-1 transition-transform" strokeWidth={3} />
