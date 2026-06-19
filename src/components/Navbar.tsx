@@ -87,13 +87,13 @@ export const Navbar = () => {
             y: -10,
             opacity: 0,
             scaleY: 0.95,
-            x: "0px"
+            x: "-187.5px"
           }}
           animate={{
             y: open ? 0 : -10,
             opacity: open ? 1 : 0,
             scaleY: open ? 1 : 0.95,
-            x: open ? "-187.5px" : "0px"
+            x: "-187.5px"
           }}
           transition={{
             delay: open ? 0.3 : 0,
