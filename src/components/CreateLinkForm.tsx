@@ -95,7 +95,7 @@ export function CreateLinkForm() {
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder={connectedAddress ? `Connected: ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}` : (chain === 'base' ? "0x... (EVM)" : chain === 'sui' ? "0x... (64 hex chars)" : "Solana address")}
+              placeholder={connectedAddress ? `Connected: ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}` : (chain === 'sui' ? "0x... (64 hex chars)" : chain === 'sol' ? "Solana address" : "Wallet address")}
               className="w-full bg-white border-[3px] border-black px-4 py-4 pr-32 text-[16px] font-bold text-black placeholder:text-black/40 outline-none focus:bg-[var(--color-brand-softer)] transition-colors"
             />
             <div className="absolute right-3 flex items-center gap-2">

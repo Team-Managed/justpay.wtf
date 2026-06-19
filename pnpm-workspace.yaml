@@ -1,11 +1,8 @@
-overrides:
-  react: $react
-  react-dom: $react-dom
-  ws: ^8.21.0
-  postcss: ^8.5.10
+ignoredBuiltDependencies:
+  - esbuild
 
 onlyBuiltDependencies:
-  - "@stellar/stellar-sdk"
+  - '@stellar/stellar-sdk'
   - bigint-buffer
   - blake-hash
   - bufferutil
@@ -15,3 +12,9 @@ onlyBuiltDependencies:
   - unrs-resolver
   - usb
   - utf-8-validate
+
+overrides:
+  react: $react
+  react-dom: $react-dom
+  ws: ^8.21.0
+  postcss: ^8.5.10

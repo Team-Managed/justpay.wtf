@@ -1,4 +1,4 @@
-import { createDefaultWagmiConfig } from '@lifi/widget-provider-ethereum'
+import { createDefaultWagmiConfig } from "@lifi/widget-provider-ethereum";
 
 // LI.FI's createDefaultWagmiConfig starts with mainnet only.
 // useSyncWagmiConfig (called in Web3Provider) dynamically adds all LI.FI-supported
@@ -8,4 +8,4 @@ import { createDefaultWagmiConfig } from '@lifi/widget-provider-ethereum'
 export const { config, connectors } = createDefaultWagmiConfig({
   wagmiConfig: { ssr: true },
   lazy: true, // only load connector SDKs when needed — keeps initial bundle small
-})
+});

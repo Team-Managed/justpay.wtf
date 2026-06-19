@@ -22,7 +22,7 @@ export default function PrivacyPage() {
           </p>
           <h2 className="text-2xl md:text-3xl font-black text-black uppercase mt-12 mb-4 bg-[var(--color-section-cyan)] inline-block px-2 border-2 border-black">2. Blockchain Transparency</h2>
           <p>
-            Please note that all transactions conducted via justpay.wtf are broadcast to public blockchains (such as Ethereum, Base, and Solana). This data is public, permanent, and inherently visible to anyone.
+            Please note that all transactions conducted via justpay.wtf are broadcast to public blockchains (such as Ethereum, Solana, and other supported chains). This data is public, permanent, and inherently visible to anyone.
           </p>
         </div>
       </div>

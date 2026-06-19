@@ -134,8 +134,8 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
                 className="flex items-center justify-between p-4 bg-blue-100 border-4 border-black hover:bg-blue-300 hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[var(--shadow-sm)] transition-all group w-full"
               >
                 <div className="flex items-center gap-3">
-                  <img src="https://img.logo.dev/base.org?token=pk_BShsdiwDTuyRVVBW5GadOg&bg=transparent" alt="Base" className="w-8 h-8 object-contain bg-transparent" />
-                  <span className="font-black text-[18px] text-black uppercase tracking-wider">Base (EVM)</span>
+                  <img src="https://img.logo.dev/ethereum.org?token=pk_BShsdiwDTuyRVVBW5GadOg&bg=transparent" alt="EVM" className="w-8 h-8 object-contain bg-transparent" />
+                  <span className="font-black text-[18px] text-black uppercase tracking-wider">EVM Wallets</span>
                 </div>
                 <ChevronRight className="w-6 h-6 text-black group-hover:translate-x-1 transition-transform" strokeWidth={3} />
               </button>

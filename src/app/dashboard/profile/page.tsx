@@ -41,7 +41,7 @@ export default function DashboardProfile() {
             </div>
             
             <div className="flex flex-col gap-2">
-              <label className="text-[14px] font-black uppercase tracking-wider text-black bg-[var(--color-section-cyan)] px-2 py-1 inline-block w-max border-2 border-black">EVM Address (Ethereum/Arbitrum/Base)</label>
+              <label className="text-[14px] font-black uppercase tracking-wider text-black bg-[var(--color-section-cyan)] px-2 py-1 inline-block w-max border-2 border-black">EVM Address (Ethereum, Arbitrum &amp; 40+ chains)</label>
               <input 
                 type="text" 
                 value={evmAddressStr} 
