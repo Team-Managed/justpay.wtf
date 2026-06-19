@@ -39,30 +39,30 @@ export function HeroSection() {
       <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden">
         {[...Array(24)].map((_, i) => (
           <motion.div
-           key={`coin-${i}`}
-           className="absolute text-[30px] md:text-[50px] opacity-[0.15] text-black"
-           initial={{
-             y: -150,
-             rotate: 0
-           }}
-           animate={{
-             y: 1200,
-             rotate: 360
-           }}
-           transition={{
-             duration: 8 + (i % 5) * 2,
-             repeat: Infinity,
-             ease: "linear",
-             delay: (i % 7) * 0.8
-           }}
-           style={{
-             left: `${(i * 4.1) % 100}%`
-           }}
+            key={`coin-${i}`}
+            className="absolute text-[30px] md:text-[50px] opacity-[0.15] text-black"
+            initial={{
+              y: -150,
+              rotate: 0
+            }}
+            animate={{
+              y: 1200,
+              rotate: 360
+            }}
+            transition={{
+              duration: 8 + (i % 5) * 2,
+              repeat: Infinity,
+              ease: "linear",
+              delay: (i % 7) * 0.8
+            }}
+            style={{
+              left: `${(i * 4.1) % 100}%`
+            }}
           >
-           {i % 4 === 0 && '₿'}
-           {i % 4 === 1 && 'Ξ'}
-           {i % 4 === 2 && '◎'}
-           {i % 4 === 3 && <Wallet size="1em" className="inline-block text-black" strokeWidth={2.5} />}
+            {i % 4 === 0 && '₿'}
+            {i % 4 === 1 && 'Ξ'}
+            {i % 4 === 2 && '◎'}
+            {i % 4 === 3 && <Wallet size="1em" className="inline-block text-black" strokeWidth={2.5} />}
           </motion.div>
         ))}
       </div>
@@ -89,7 +89,7 @@ export function HeroSection() {
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.6 }}
-          className="w-full max-w-[500px] relative z-20 bg-[var(--color-neutral-secondary-soft)] border-[4px] border-black p-4 md:p-6 shadow-[12px_12px_0_0_rgba(0,0,0,1)] mb-12"
+          className="w-full max-w-[600px] relative z-20 bg-[var(--color-neutral-secondary-soft)] border-[4px] border-black p-4 md:p-6 shadow-[12px_12px_0_0_rgba(0,0,0,1)] mb-12"
         >
           <div className="flex items-center justify-between mb-8 border-b-4 border-black pb-4">
             <h2 className="text-2xl font-black uppercase tracking-tight text-black flex items-center gap-2">

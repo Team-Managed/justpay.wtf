@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Wallet } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -43,9 +43,8 @@ export function CreateLinkForm() {
   }, [connectedAddress]);
 
   const handleCreate = async () => {
-    // If not connected and no manual address, prevent create
     const finalAddress = address || connectedAddress;
-    if (!finalAddress || !amount) return;
+    if (!finalAddress) return;
     setIsLoading(true);
 
     try {
@@ -57,17 +56,21 @@ export function CreateLinkForm() {
       else if (expiry === '7d') expiresAt = now + 7 * 24 * 60 * 60 * 1000;
       else if (expiry === 'none') expiresAt = undefined;
 
+      // if amount is empty, the payment link is fully open (payer can enter any amount)
+      // and it acts like a permanent link
+      const linkType = expiry === 'none' && !amount ? 'tip_jar' : 'invoice';
+
       const result = await createLinkMutation({
         merchantAddress: finalAddress,
         destinationChain: chain,
         destinationTokenSymbol: tokenSymbol,
         destinationTokenAddress: chain === 'sui' || chain === 'suiTestnet' ? '0x2::sui::SUI' : undefined,
-        amount,
+        amount: amount ? amount : undefined,
         merchantEmail: email || undefined,
         memo: memo || undefined,
         label: 'justpay.wtf Payment',
         expiresAt,
-        linkType: 'invoice',
+        linkType: linkType as any,
       });
 
       // Save to localStorage LRU
@@ -89,15 +92,36 @@ export function CreateLinkForm() {
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      <FeeDisclosureBanner chain={chain} />
-
       {/* Main Widget Box */}
       <div className="bg-white border-4 border-black p-4 shadow-[8px_8px_0_0_#000] flex flex-col gap-4 relative z-10 transition-transform hover:-translate-y-1 hover:shadow-[12px_12px_0_0_#000]">
+        
+        {/* Destination Address Input (Top Priority) */}
+        <div className="flex flex-col gap-2 relative">
+          <label className="text-[12px] font-black uppercase tracking-wider text-black bg-[var(--color-section-yellow)] px-2 py-1 inline-block w-max border-2 border-black -mb-3 relative z-10 ml-2">Receive to Address</label>
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder={connectedAddress ? `Connected: ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}` : (chain === 'base' ? "0x... (EVM)" : chain === 'sui' ? "0x... (64 hex chars)" : "Solana address")}
+              className="w-full bg-white border-[3px] border-black px-4 py-4 pr-12 text-[16px] font-bold text-black placeholder:text-black/40 outline-none focus:bg-[var(--color-brand-softer)] transition-colors"
+            />
+            {connectedAddress && !address && (
+              <button 
+                onClick={() => setAddress(connectedAddress)}
+                className="absolute right-3 bg-[var(--color-section-cyan)] border-2 border-black p-2 hover:bg-[var(--color-section-green)] transition-colors group"
+                title="Autofill from connected wallet"
+              >
+                <Wallet className="w-4 h-4 text-black group-hover:scale-110 transition-transform" />
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Token & Network Selection */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[12px] font-black uppercase tracking-wider text-black bg-[var(--color-section-cyan)] px-2 py-1 inline-block w-max border-2 border-black -mb-3 relative z-10 ml-2">Network & Asset</label>
-          <div className="bg-white border-[3px] border-black p-3 pt-4">
+        <div className="flex flex-col gap-2 mt-2">
+          <label className="text-[12px] font-black uppercase tracking-wider text-black bg-[var(--color-section-cyan)] px-2 py-1 inline-block w-max border-2 border-black -mb-3 relative z-10 ml-2">Network & Asset (Optional)</label>
+          <div className="bg-white border-[3px] border-black p-3 pt-4 hover:bg-slate-50 transition-colors">
             <ChainTokenSelector
               selectedChain={chain}
               selectedToken={tokenSymbol}
@@ -108,8 +132,8 @@ export function CreateLinkForm() {
         </div>
 
         {/* Amount Input */}
-        <div className="flex flex-col gap-2 relative group">
-          <label className="text-[12px] font-black uppercase tracking-wider text-black bg-[var(--color-section-pink)] px-2 py-1 inline-block w-max border-2 border-black -mb-3 relative z-10 ml-2 transition-transform group-focus-within:-translate-y-1">Amount to Request</label>
+        <div className="flex flex-col gap-2 relative group mt-2">
+          <label className="text-[12px] font-black uppercase tracking-wider text-black bg-[var(--color-section-pink)] px-2 py-1 inline-block w-max border-2 border-black -mb-3 relative z-10 ml-2 transition-transform group-focus-within:-translate-y-1">Amount to Request (Optional)</label>
           <div className="bg-white border-[3px] border-black flex items-center p-2 focus-within:bg-[var(--color-brand-softer)] transition-colors">
             <input
               type="number"
@@ -120,18 +144,6 @@ export function CreateLinkForm() {
             />
             <span className="text-2xl font-black pr-4">{tokenSymbol}</span>
           </div>
-        </div>
-
-        {/* Destination Address Input */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[12px] font-black uppercase tracking-wider text-black bg-[var(--color-section-yellow)] px-2 py-1 inline-block w-max border-2 border-black -mb-3 relative z-10 ml-2">Receive to Address</label>
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder={connectedAddress ? `Connected: ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}` : (chain === 'base' ? "0x... (EVM)" : chain === 'sui' ? "0x... (64 hex chars)" : "Solana address")}
-            className="w-full bg-white border-[3px] border-black px-4 py-4 text-[16px] font-bold text-black placeholder:text-black/40 outline-none focus:bg-[var(--color-section-yellow)] transition-colors"
-          />
         </div>
 
         {/* Advanced Options Toggle */}
@@ -194,7 +206,7 @@ export function CreateLinkForm() {
 
         <button
           onClick={handleCreate}
-          disabled={isLoading || (!address && !connectedAddress) || !amount}
+          disabled={isLoading || (!address && !connectedAddress)}
           className="w-full mt-4 flex items-center justify-center gap-2 border-[4px] border-black bg-black px-6 py-4 text-[22px] font-black uppercase text-white shadow-[6px_6px_0px_0px_var(--color-section-yellow)] hover:shadow-[10px_10px_0px_0px_var(--color-section-yellow)] hover:-translate-y-1 hover:translate-x-1 active:translate-y-0 active:translate-x-0 active:shadow-[0px_0px_0px_0px_var(--color-section-yellow)] transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
         >
           {isLoading ? 'Creating...' : 'Create Payment Link'}
