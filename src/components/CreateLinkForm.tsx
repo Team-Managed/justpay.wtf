@@ -111,31 +111,38 @@ export function CreateLinkForm() {
               className="w-full bg-white border-[3px] border-black px-4 py-4 pr-32 text-[16px] font-bold text-black placeholder:text-black/40 outline-none focus:bg-[var(--color-brand-softer)] transition-colors"
             />
             <div className="absolute right-3 flex items-center gap-2">
-              <button
-                onClick={async () => {
-                  try {
-                    const text = await navigator.clipboard.readText();
-                    if (text) setAddress(text.trim());
-                  } catch (err) {
-                    console.error('Failed to read clipboard', err);
-                  }
-                }}
-                className="bg-[var(--color-section-yellow)] border-2 border-black p-2 hover:bg-[var(--color-section-pink)] transition-colors group hidden md:block"
-                title="Paste from clipboard"
-              >
-                <ClipboardPaste className="w-5 h-5 text-black group-hover:scale-110 transition-transform" />
-              </button>
+              <span className="t-tt-wrap">
+                <button
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      if (text) setAddress(text.trim());
+                    } catch (err) {
+                      console.error('Failed to read clipboard', err);
+                    }
+                  }}
+                  className="bg-[var(--color-section-yellow)] border-2 border-black p-2 hover:bg-[var(--color-section-pink)] transition-colors group hidden md:block t-tt-trigger"
+                >
+                  <ClipboardPaste className="w-5 h-5 text-black group-hover:scale-110 transition-transform" />
+                </button>
+                <span className="t-tt bg-[var(--color-section-yellow)]" role="tooltip">Paste Address</span>
+              </span>
 
               {connectedAddress && !address ? (
-                <button
-                  onClick={() => setAddress(connectedAddress)}
-                  className="bg-[var(--color-section-cyan)] border-2 border-black p-2 hover:bg-[var(--color-section-green)] transition-colors group hidden md:block"
-                  title="Autofill from connected wallet"
-                >
-                  <Wallet className="w-5 h-5 text-black group-hover:scale-110 transition-transform" />
-                </button>
+                <span className="t-tt-wrap">
+                  <button
+                    onClick={() => setAddress(connectedAddress)}
+                    className="bg-[var(--color-section-cyan)] border-2 border-black p-2 hover:bg-[var(--color-section-green)] transition-colors group hidden md:block t-tt-trigger"
+                  >
+                    <Wallet className="w-5 h-5 text-black group-hover:scale-110 transition-transform" />
+                  </button>
+                  <span className="t-tt bg-[var(--color-section-cyan)]" role="tooltip">Autofill Wallet</span>
+                </span>
               ) : (
-                <WalletConnectButton variant="input" />
+                <span className="t-tt-wrap">
+                  <WalletConnectButton variant="input" />
+                  <span className="t-tt" role="tooltip">{connectedAddress ? "Disconnect Wallet" : "Connect Wallet"}</span>
+                </span>
               )}
             </div>
           </div>
