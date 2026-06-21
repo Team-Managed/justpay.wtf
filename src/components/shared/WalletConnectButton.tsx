@@ -2,25 +2,18 @@
 
 import { useAccount, useAccountDisconnect, useWalletMenu } from '@lifi/wallet-management';
 import { ChainType } from '@lifi/sdk';
-import { useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
 import { Wallet, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { BrutalistButton } from '../brutalism/Button';
 
-// Sui still uses dapp-kit directly — @lifi/widget-provider-sui has a peer dep
-// conflict with @mysten/dapp-kit-react vs @mysten/dapp-kit, so we keep Sui separate.
-
 export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar' | 'form' | 'input' }) {
   const [mounted, setMounted] = useState(false);
 
-  // LI.FI unified account — covers EVM + Solana (via WalletManagementProviders)
+  // LI.FI unified account — covers EVM + Solana + Sui (via WalletManagementProviders)
   const { account: evmAccount } = useAccount({ chainType: ChainType.EVM });
   const { account: svmAccount } = useAccount({ chainType: ChainType.SVM });
+  const { account: suiAccount } = useAccount({ chainType: ChainType.MVM });
   const disconnect = useAccountDisconnect();
-
-  // Sui — separate because of dependency conflict
-  const suiAccount = useCurrentAccount();
-  const { mutate: suiDisconnect } = useDisconnectWallet();
 
   // LI.FI's built-in wallet picker modal
   const { openWalletMenu } = useWalletMenu();
@@ -34,9 +27,9 @@ export function WalletConnectButton({ variant = 'navbar' }: { variant?: 'navbar'
   const connected = !!connectedAddress;
 
   const handleDisconnect = () => {
-    if (evmAccount) disconnect(evmAccount);
-    if (svmAccount) disconnect(svmAccount);
-    if (suiAccount) suiDisconnect();
+    if (evmAccount?.address) disconnect(evmAccount);
+    if (svmAccount?.address) disconnect(svmAccount);
+    if (suiAccount?.address) disconnect(suiAccount);
   };
 
   if (!mounted) {

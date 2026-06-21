@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useAccount, useDisconnect } from 'wagmi';
+import { useAccount, useAccountDisconnect } from '@lifi/wallet-management';
+import { ChainType } from '@lifi/sdk';
 import { LogOut } from 'lucide-react';
 
 export function DashboardSidebar() {
@@ -12,21 +12,21 @@ export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const { publicKey, connected: solConnected, disconnect: solDisconnect } = useWallet();
-  const { address: evmAddress, isConnected: evmConnected } = useAccount();
-  const { disconnect: evmDisconnect } = useDisconnect();
+  const { account: evmAccount } = useAccount({ chainType: ChainType.EVM });
+  const { account: svmAccount } = useAccount({ chainType: ChainType.SVM });
+  const disconnect = useAccountDisconnect();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const connected = solConnected || evmConnected;
-  const address = solConnected ? publicKey?.toBase58() : evmAddress;
-  const shortAddress = mounted && address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Not Connected';
+  const connectedAddress = evmAccount?.address || svmAccount?.address;
+  const connected = !!connectedAddress;
+  const shortAddress = mounted && connectedAddress ? `${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}` : 'Not Connected';
 
   const handleDisconnect = () => {
-    if (solConnected) solDisconnect();
-    if (evmConnected) evmDisconnect();
+    if (evmAccount?.address) disconnect(evmAccount);
+    if (svmAccount?.address) disconnect(svmAccount);
     router.push('/');
   };
 
@@ -55,11 +55,10 @@ export function DashboardSidebar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-4 py-3 border-2 border-black text-[16px] font-bold transition-all ${
-                  isActive 
-                    ? 'bg-[var(--color-section-cyan)] text-black shadow-[var(--shadow-xs)] -translate-y-1 -translate-x-1' 
-                    : 'bg-white text-black hover:bg-[var(--color-section-pink)] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[var(--shadow-xs)]'
-                }`}
+                className={`px-4 py-3 border-2 border-black text-[16px] font-bold transition-all ${isActive
+                  ? 'bg-[var(--color-section-cyan)] text-black shadow-[var(--shadow-xs)] -translate-y-1 -translate-x-1'
+                  : 'bg-white text-black hover:bg-[var(--color-section-pink)] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[var(--shadow-xs)]'
+                  }`}
               >
                 {link.name}
               </Link>
@@ -74,7 +73,7 @@ export function DashboardSidebar() {
               <p className="text-[14px] font-black text-black truncate">{shortAddress}</p>
             </div>
             {mounted && connected && (
-              <button 
+              <button
                 onClick={handleDisconnect}
                 className="flex items-center justify-center gap-2 text-[14px] font-bold text-white bg-[var(--color-danger)] border-2 border-black hover:bg-red-600 transition-colors py-2 mt-2 shadow-[var(--shadow-xs)] hover:-translate-y-0.5 hover:-translate-x-0.5"
               >
@@ -93,9 +92,8 @@ export function DashboardSidebar() {
             <Link
               key={link.href}
               href={link.href}
-              className={`p-3 flex flex-col items-center gap-1 text-[12px] font-bold transition-colors ${
-                isActive ? 'text-black border-b-4 border-[var(--color-section-cyan)]' : 'text-[var(--color-body-subtle)] hover:text-black'
-              }`}
+              className={`p-3 flex flex-col items-center gap-1 text-[12px] font-bold transition-colors ${isActive ? 'text-black border-b-4 border-[var(--color-section-cyan)]' : 'text-[var(--color-body-subtle)] hover:text-black'
+                }`}
             >
               {link.name}
             </Link>

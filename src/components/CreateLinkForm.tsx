@@ -5,7 +5,6 @@ import { ArrowRight, Wallet, ClipboardPaste } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAccount as useLiFiAccount } from '@lifi/wallet-management';
 import { ChainType } from '@lifi/sdk';
-import { useCurrentAccount } from '@mysten/dapp-kit'; // Sui separate — dep conflict
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { WalletConnectButton } from './shared/WalletConnectButton';
@@ -35,7 +34,7 @@ export function CreateLinkForm() {
 
   const { account: evmAccount } = useLiFiAccount({ chainType: ChainType.EVM });
   const { account: svmAccount } = useLiFiAccount({ chainType: ChainType.SVM });
-  const suiAccount = useCurrentAccount();
+  const { account: suiAccount } = useLiFiAccount({ chainType: ChainType.MVM });
   const connectedAddress = evmAccount?.address || svmAccount?.address || suiAccount?.address;
   const createLinkMutation = useMutation(api.links.createLink);
 

@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { useAccount, useSendTransaction } from 'wagmi'
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
-import { useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-kit'
+import { useAccount as useLiFiAccount } from '@lifi/wallet-management'
+import { ChainType } from '@lifi/sdk'
+import { useDAppKit } from '@mysten/dapp-kit-react'
 import { fetchLifiQuote, getLifiChainId } from '@/lib/web3/router/lifi'
 import { Loader2 } from 'lucide-react'
 import { VersionedTransaction } from '@solana/web3.js'
@@ -46,8 +48,8 @@ export function SmartButton({
   const wallet = useWallet()
   const { connection } = useConnection()
 
-  const suiAccount = useCurrentAccount()
-  const { mutateAsync: signAndExecuteSui } = useSignAndExecuteTransaction()
+  const suiLiFi = useLiFiAccount({ chainType: ChainType.MVM })
+  const dappKit = useDAppKit()
 
   const recordTx = useMutation(api.transactions.recordTransaction)
 
@@ -59,7 +61,7 @@ export function SmartButton({
   let payerAddress: string | undefined
   if (isEvm) payerAddress = evmAddress
   else if (isSolana) payerAddress = wallet.publicKey?.toBase58()
-  else if (isSui) payerAddress = suiAccount?.address
+  else if (isSui) payerAddress = suiLiFi.account?.address
 
   const handleExecute = async () => {
     setIsLoading(true)
@@ -114,7 +116,7 @@ export function SmartButton({
           if (!quote.transactionRequest.data) throw new Error('No tx data');
           const txBuf = Buffer.from(quote.transactionRequest.data, 'base64')
           const transaction = Transaction.from(txBuf)
-          const result = await signAndExecuteSui({ transaction })
+          const result = await dappKit.signAndExecuteTransaction({ transaction })
           txHash = result.digest
         } else {
           throw new Error('Unsupported payer chain')
@@ -135,7 +137,7 @@ export function SmartButton({
           } else if (isSolana) {
             txHash = await wallet.sendTransaction(directTx as any, connection);
           } else if (isSui) {
-            const result = await signAndExecuteSui({ transaction: directTx as any });
+            const result = await dappKit.signAndExecuteTransaction({ transaction: directTx as any });
             txHash = result.digest;
           } else {
             throw err;
