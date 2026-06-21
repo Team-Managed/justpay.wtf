@@ -108,6 +108,22 @@ export function buildCheckoutWidgetConfig(
 
     integrator: "justpay",
 
+    // SDK config — provide CORS-friendly RPC URLs for major chains.
+    // LiFi's default RPCs (arc-rpc.transferto.xyz, etc.) reject localhost CORS.
+    sdkConfig: {
+      rpcUrls: {
+        1: ["https://eth.llamarpc.com"],         // Ethereum
+        56: ["https://bsc-dataseed1.defibit.io", "https://bsc-rpc.publicnode.com"], // BSC
+        137: ["https://polygon-rpc.com"],        // Polygon
+        42161: ["https://arb1.arbitrum.io/rpc"], // Arbitrum
+        10: ["https://mainnet.optimism.io"],     // Optimism
+        8453: ["https://mainnet.base.org"],      // Base
+        43114: ["https://api.avax.network/ext/bc/C/rpc"], // Avalanche
+        250: ["https://rpc.ftm.tools"],          // Fantom
+        100: ["https://rpc.gnosischain.com"],    // Gnosis
+      },
+    },
+
     feeConfig: {
       fee: 0,
     },
