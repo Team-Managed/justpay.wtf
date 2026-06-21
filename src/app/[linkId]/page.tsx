@@ -50,9 +50,9 @@ export default async function PaymentPage({ params }: Props) {
   const isUnavailable = isExpired || link.status === 'cancelled'
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 sm:p-12 relative overflow-hidden">
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary/20 blur-[120px] pointer-events-none" />
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 sm:p-12 relative overflow-hidden bg-[var(--color-neutral-primary-soft)] border-x-2 border-black max-w-7xl mx-auto shadow-[var(--shadow-lg)]">
+      {/* Grid Background Pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(transparent_19px,var(--color-border-default)_20px),linear-gradient(90deg,transparent_19px,var(--color-border-default)_20px)] bg-[length:40px_40px] opacity-[0.15] pointer-events-none" />
 
       <div className="w-full max-w-md z-10 flex flex-col gap-6">
         <PaymentCard
@@ -62,14 +62,14 @@ export default async function PaymentPage({ params }: Props) {
           memo={link.note}
         />
 
-        <div className="glass-card p-6 w-full">
+        <div className="bg-[var(--color-neutral-secondary-soft)] border-4 border-black p-6 w-full shadow-[6px_6px_0px_0px_var(--color-section-pink)]">
           {isUnavailable ? (
-            <div className="flex flex-col items-center justify-center text-center gap-4 py-6 border border-error/20 bg-error/5 rounded-2xl">
-              <div className="w-12 h-12 rounded-full bg-error/20 flex items-center justify-center mb-2">
-                <div className="w-6 h-6 rounded-full bg-error flex items-center justify-center text-white font-bold text-lg">!</div>
+            <div className="flex flex-col items-center justify-center text-center gap-4 py-8 border-4 border-black bg-[var(--color-danger)] text-white">
+              <div className="w-12 h-12 bg-white flex items-center justify-center border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <span className="font-black text-2xl text-black">!</span>
               </div>
-              <h2 className="text-xl font-bold text-error">Payment Unavailable</h2>
-              <p className="text-zinc-400 text-sm max-w-xs">
+              <h2 className="text-2xl font-black uppercase">Payment Unavailable</h2>
+              <p className="font-bold text-white max-w-xs">
                 {isExpired ? 'This payment link has expired.' : 'This payment link was deactivated by the creator.'}
               </p>
             </div>

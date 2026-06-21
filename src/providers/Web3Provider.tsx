@@ -28,9 +28,15 @@ const lifiClient = createClient({ integrator: 'justpay', disableVersionCheck: tr
 const walletProviders = [EthereumProvider(), SolanaProvider(), SuiProvider()]
 
 // Minimal MUI theme — required by WalletMenuModal which uses theme.vars.palette.
-// cssVariables: true is needed so theme.vars is populated (MUI v9 sets vars=null without it).
-// colorSchemes: { dark: true } enables the dark palette that @lifi/wallet-management expects.
-const muiTheme = createTheme({ cssVariables: true, colorSchemes: { dark: true } })
+// cssVariables needed so theme.vars is populated.
+// colorSchemeSelector scoped to [data-mui-color-scheme] so MUI never touches
+// the <html> element or adds a "dark" class that bleeds into Tailwind.
+// defaultColorScheme forced to 'light' so the wallet modal always renders light.
+const muiTheme = createTheme({
+  cssVariables: { colorSchemeSelector: 'data-mui-color-scheme' },
+  colorSchemes: { light: true, dark: true },
+  defaultColorScheme: 'light',
+})
 
 function ChainSyncer() {
   const { data: chains } = useQuery({
