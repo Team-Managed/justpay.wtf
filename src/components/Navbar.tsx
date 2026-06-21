@@ -30,6 +30,7 @@ export const Navbar = () => {
   const { account: suiAccount } = useLiFiAccount({ chainType: ChainType.MVM });
   const dappKit = useDAppKit();
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const handleDashboardClick = useCallback(async () => {
     // Already authenticated — just navigate
     if (isAuthenticated) {

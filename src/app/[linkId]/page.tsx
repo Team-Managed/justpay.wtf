@@ -2,7 +2,7 @@
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '../../../convex/_generated/api'
 import { PaymentCard } from '@/components/PaymentCard'
-import { PaymentClient } from './CheckoutClient'
+import { PaymentClient } from './PaymentClient'
 import { ExpiryBadge } from '@/components/ExpiryBadge'
 import type { Metadata } from 'next'
 

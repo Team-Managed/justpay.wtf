@@ -59,7 +59,7 @@ export function buildCheckoutWidgetConfig(
 
     // Hide exchange-specific elements for a clean payment flow
     hiddenUI: {
-      toAddress: true,          // Already shown in PaymentCard above
+      toAddress: true, // Already shown in PaymentCard above
       reverseTokensButton: true, // Not relevant for payments
       poweredBy: true,
     },
